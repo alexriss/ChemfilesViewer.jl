@@ -1,0 +1,22 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "description": "ChemfilesViewer frontend",
+  "main": "app/index.html",
+  "scripts": {
+    "build": "rollup -c \"rollup_config.js\"",
+    "build_dev": "rollup -c \"rollup_config_dev.js\"",
+    "start": "serve"
+  },
+  "author": "Alex Riss",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "three": "^0.131.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^13.0.4",
+    "rollup": "^2.56.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "serve": "^12.0.0"
+  }
+}

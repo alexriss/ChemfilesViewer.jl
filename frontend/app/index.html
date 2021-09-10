@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>ChemfilesViewer.jl</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .chemviewer_box {
+            display: flex;
+            flex-flow: column;
+            height: 100%;
+        }
+
+        .chemviewer_box .chemviewer_row.chemviewer_header {
+            flex: 0 1 auto;
+        }
+
+        .chemviewer_box .chemviewer_row.chemviewer_content {
+            flex: 1 1 auto;
+        }
+
+        .chemviewer_box .chemviewer_row.chemviewer_footer {
+            flex: 0 1 12px;
+            font-size: 9px; 
+        }
+
+        div.chemviewer_header {
+            text-decoration: none;
+            font-family: sans-serif;
+        }
+
+        div.chemviewer_header .chemviewer_buttons, div.chemviewer_header label {
+            color: #303030;
+            background-color: #ffffff;
+            font-size: 0.9em;
+            display: inline-block;
+            padding: 0.3em 0.3em;
+            border: 0.1em solid #f0f0ff;
+            margin: 0 0.05em 0.05em 0;
+            border-radius: 0.12em;
+            box-sizing: border-box;
+            text-align: center;
+            cursor:pointer;
+        }
+
+        #chemviewer_save {
+            background-color: #e6dbdb;
+            border: 0.1em dashed #a0a0af;
+        }
+
+        div.chemviewer_header .chemviewer_buttons:hover {
+            border-color: #fff0f0;
+            color: #606060;
+            background-color: #f0f0ff;
+            transition: all 0.2s;
+        }
+
+        div.chemviewer_header a {
+            color: #303030;
+            background-color: #ffffff;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        div.chemviewer_header .disabled {
+            color: #aaa;
+        }
+
+        #chemviewer_container {
+            display: flex;
+            align-items: stretch;
+        }
+
+        #chemviewer {
+            width: 96%;
+            min-height: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+
+        #chemviewer .chemviewer_label {
+            text-shadow: -1px 1px 1px rgba(0,0,0,1);
+            font-size: 1.2em;
+        }
+
+        #chemviewer .hidden {
+            display: none;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="chemviewer_box">
+        <div class="chemviewer_row chemviewer_header">
+            <div class="chemviewer_header">
+                <select class="chemviewer_buttons" id="chemviewer_drawingtype">
+                    <option value="ball and stick">ball and stick</option>
+                    <option value="space filling">space filling</option>
+                    <option value="wireframe">wireframe</option>
+                </select>
+                <select class="chemviewer_buttons" id="chemviewer_shader">
+                    <option value="basic">basic</option>
+                    <option value="phong">phong</option>
+                    <option value="lambert">lambert</option>
+                </select>
+                <select class="chemviewer_buttons" id="chemviewer_cameratype">
+                    <option value="perspective">perspective</option>
+                    <option value="orthographic">orthographic</option>
+                </select>
+                <label id="chemviewer_unitcell_label"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_unitcell" checked> unit cell</label>
+                <label id="chemviewer_labels_label"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_labels" checked> labels</label>
+                <button class="chemviewer_buttons" id="chemviewer_save">save</button>
+            </div>
+        </div>
+        <div id="chemviewer_container" class="chemviewer_row chemviewer_content">
+            <div id="chemviewer"></div>
+        </div>
+        <div class="chemviewer_row chemviewer_footer">
+            <span></span>
+        </div>
+    </div>
+
+    
+    <script>
+        // setup
+        function setupChemViewer() {
+            // make accessible from the outside
+            if (!window.hasOwnProperty("chemviewer_objects")) {
+                window.chemviewer_objects = {}
+            }
+
+            const chemviewer_id = '{{ id }}';
+            const chemviewer = new ChemViewer();
+            chemviewer.create('#chemviewer');
+            // chemviewer.drawJsonFile("fe_mof_74.json");
+            window.chemviewer_objects[chemviewer_id] = chemviewer;
+        }
+
+        function sleep(milliseconds) {
+            return new Promise(resolve => setTimeout(resolve, milliseconds));
+        }
+
+        // for access from julia
+        async function drawJsonString(id, jsonString) {
+            for (let i=0;i<50;i++) {
+                if (!window.chemviewer_objects.hasOwnProperty(id)) {
+                    await sleep(100);
+                } else {
+                    break;
+                }
+            }
+            window.chemviewer_objects[id].clear();
+            window.chemviewer_objects[id].draw(JSON.parse(jsonString));
+        }
+
+
+    </script>
+
+</body>
+
+</html>
