@@ -42904,7 +42904,9 @@
 	        "hemisphereLightIntensity": 0.8,
 	        "directionalLightIntensity": 0.05,
 	        "center": [],
-	        "rotateSpeed": 2
+	        "rotateSpeed": 2,
+	        "renderWidth": 1600,
+	        "renderHeight": 1600
 	    };
 
 	    var s = document.querySelector(selector), hasWebgl;
@@ -43124,7 +43126,7 @@
 	        self.setOptions();
 	    });
 	    document.getElementById('chemviewer_save').addEventListener('click', function (e) {
-	        self.save();
+	        self.save(true);
 	    });
 
 	    // keyboard shortcuts
@@ -43273,8 +43275,8 @@
 	                maxDist = Math.max(maxDist, maxXYZ[ii] - self.center[ii]);
 	            }
 	            self.cameraDistance = (maxDist / Math.tan(Math.PI * self.camera.fov / 360) + Math.max(...maxXYZ)) / 0.9;
-	            self.cameraDistanceOriginal = self.cameraDistance;
 	        }
+	        self.cameraDistanceOriginal = self.cameraDistance;
 
 	        self.positionCamera(self.cameraAxis, self.cameraAxisDirection);
 	    }
@@ -43432,7 +43434,7 @@
 
 
 	// Request to save a screenshot of the current canvas.
-	ChemViewer.prototype.save = async function (downloadImage = true) {
+	ChemViewer.prototype.save = async function (downloadImage = false) {
 	    this.saveImageDownload = downloadImage;
 	    this.saveImage = true;
 	    this.linkSave.href = "";
@@ -43611,15 +43613,18 @@
 
 	// Runs the main window animation in an infinite loop
 	ChemViewer.prototype.animate = function () {
-	    var self = this, w, h, renderWidth;
+	    var self = this, w, h, aspect;
 	    window.requestAnimationFrame(function () {
 	        return self.animate();
 	    });
 	    if (this.saveImage) {
-	        renderWidth = 2560 / (window.devicePixelRatio || 1);
 	        w = this.s.clientWidth; h = this.s.clientHeight;
-	        this.renderer.setSize(renderWidth, renderWidth * h / w);
-	        this.labelRenderer.setSize(renderWidth, renderWidth * h / w);
+	        aspect = this.camera.aspect;
+
+	        this.camera.aspect = this.renderWidth / this.renderHeight;
+	        this.camera.updateProjectionMatrix();
+	        this.renderer.setSize(this.renderWidth, this.renderHeight);
+	        this.labelRenderer.setSize(this.renderWidth, this.renderHeight);
 	        this.render();
 
 	        var pngBase64 = this.renderer.domElement.toDataURL('image/png');
@@ -43628,6 +43633,9 @@
 
 	        this.renderer.setSize(w, h);
 	        this.labelRenderer.setSize(w, h);
+	        this.camera.aspect = aspect;
+	        this.camera.updateProjectionMatrix();
+
 	        this.saveImage = false;
 
 	        if (this.saveImageDownload) {

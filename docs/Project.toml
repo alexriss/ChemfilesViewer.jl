@@ -1,0 +1,3 @@
+[deps]
+ChemfilesViewer = "e6216453-ab07-4bd6-b3b4-b7ee81a805aa"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

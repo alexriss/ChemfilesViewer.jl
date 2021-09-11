@@ -156,6 +156,7 @@
         }
 
         // for access from julia
+
         async function drawJsonString(id, jsonString) {
             for (let i=0;i<50;i++) {
                 if (!window.chemviewer_objects.hasOwnProperty(id)) {
@@ -168,6 +169,27 @@
             window.chemviewer_objects[id].draw(JSON.parse(jsonString));
         }
 
+        async function setOptions(id, dict) {
+            for (let i=0;i<50;i++) {
+                if (!window.chemviewer_objects.hasOwnProperty(id)) {
+                    await sleep(100);
+                } else {
+                    break;
+                }
+            }
+            window.chemviewer_objects[id].setOptions(dict);
+        }
+
+        async function get_png_string(id) {
+            for (let i=0;i<50;i++) {
+                if (!window.chemviewer_objects.hasOwnProperty(id)) {
+                    await sleep(100);
+                } else {
+                    break;
+                }
+            }
+            return window.chemviewer_objects[id].save();
+        }
 
     </script>
 
