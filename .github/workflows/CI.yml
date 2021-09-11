@@ -51,9 +51,9 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using test
-            DocMeta.setdocmeta!(test, :DocTestSetup, :(using test); recursive=true)
-            doctest(test)'
+            using ChemfilesViewer
+            DocMeta.setdocmeta!(ChemfilesViewer, :DocTestSetup, :(using ChemfilesViewer); recursive=true)
+            doctest(ChemfilesViewer)'
       - run: julia --project=docs docs/make.jl
         env:
           JULIA_PKG_SERVER: ""
