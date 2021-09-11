@@ -104,7 +104,7 @@ function render_dict_molecule(dict_molecule::AbstractDict, window::Union{Blink.W
             sleep(0.05)
         end
 
-        @js window setupChemViewer()
+        @js window setupChemViewer($options)
         @js window drawJsonString($chemviewer_id, $json_molecule)
     finally
         return window, chemviewer_id

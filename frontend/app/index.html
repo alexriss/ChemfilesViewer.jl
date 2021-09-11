@@ -54,6 +54,11 @@
             border: 0.1em dashed #a0a0af;
         }
 
+        #chemviewer_reset {
+            background-color: #e6e6e6;
+            border: 0.1em solid #afafaf;
+        }
+
         div.chemviewer_header .chemviewer_buttons:hover {
             border-color: #fff0f0;
             color: #606060;
@@ -118,6 +123,7 @@
                 </select>
                 <label id="chemviewer_unitcell_label"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_unitcell" checked> unit cell</label>
                 <label id="chemviewer_labels_label"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_labels" checked> labels</label>
+                <button class="chemviewer_buttons" id="chemviewer_reset">reset</button>
                 <button class="chemviewer_buttons" id="chemviewer_save">save</button>
             </div>
         </div>
@@ -132,7 +138,7 @@
     
     <script>
         // setup
-        function setupChemViewer() {
+        function setupChemViewer(options={}) {
             // make accessible from the outside
             if (!window.hasOwnProperty("chemviewer_objects")) {
                 window.chemviewer_objects = {}
@@ -140,7 +146,7 @@
 
             const chemviewer_id = '{{ id }}';
             const chemviewer = new ChemViewer();
-            chemviewer.create('#chemviewer');
+            chemviewer.create('#chemviewer', options);
             // chemviewer.drawJsonFile("fe_mof_74.json");
             window.chemviewer_objects[chemviewer_id] = chemviewer;
         }
