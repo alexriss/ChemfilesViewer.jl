@@ -407,8 +407,8 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
                 maxDist = Math.max(maxDist, maxXYZ[ii] - self.center[ii])
             }
             self.cameraDistance = (maxDist / Math.tan(Math.PI * self.camera.fov / 360) + Math.max(...maxXYZ)) / 0.9;
-            self.cameraDistanceOriginal = self.cameraDistance;
         }
+        self.cameraDistanceOriginal = self.cameraDistance;
 
         self.positionCamera(self.cameraAxis, self.cameraAxisDirection);
     }
