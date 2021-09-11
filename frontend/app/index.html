@@ -11,21 +11,21 @@
             margin: 0;
         }
 
-        .chemviewer_box {
+        .chemviewer_main {
             display: flex;
             flex-flow: column;
             height: 100%;
         }
 
-        .chemviewer_box .chemviewer_row.chemviewer_header {
+        .chemviewer_main .chemviewer_row.chemviewer_header {
             flex: 0 1 auto;
         }
 
-        .chemviewer_box .chemviewer_row.chemviewer_content {
+        .chemviewer_main .chemviewer_row.chemviewer_content {
             flex: 1 1 auto;
         }
 
-        .chemviewer_box .chemviewer_row.chemviewer_footer {
+        .chemviewer_main .chemviewer_row.chemviewer_footer {
             flex: 0 1 12px;
             font-size: 9px; 
         }
@@ -99,7 +99,7 @@
 
 <body>
 
-    <div class="chemviewer_box">
+    <div class="chemviewer_main" id="chemviewer_main">
         <div class="chemviewer_row chemviewer_header">
             <div class="chemviewer_header">
                 <select class="chemviewer_buttons" id="chemviewer_drawingtype">

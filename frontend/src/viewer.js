@@ -34,7 +34,13 @@ ChemViewer.prototype.create = function (selector, options) {
     this.quality = options.hasOwnProperty('quality') ? options.quality : 'high';
     this.showUnitCell = options.hasOwnProperty('showUnitCell') ? options.showUnitCell : true;
     this.showLabels = options.hasOwnProperty('showLabels') ? options.showLabels : false;
+    this.cameraFov = options.hasOwnProperty('cameraFov') ? options.cameraFov : 40;
     this.updateCamera = (this.cameraType === 'orthographic');
+    this.cameraDistance = options.hasOwnProperty('cameraDistance') ? options.cameraDistance : 0;
+    this.cameraAxis = options.hasOwnProperty('cameraAxis') ? options.cameraAxis : "z";
+    this.cameraAxisDirection = options.hasOwnProperty('cameraAxisDirection') ? options.cameraAxisDirection : "+";
+    this.center = options.hasOwnProperty('center') ? options.center : [];
+    this.rotateSpeed = options.hasOwnProperty('rotateSpeed') ? options.rotateSpeed : 2;
     this.saveImage = false;
     this.saveImageDownload = true;
     this.linkSave = document.createElement('a');
@@ -67,7 +73,7 @@ ChemViewer.prototype.create = function (selector, options) {
     this.labelRenderer.domElement.style.top = '0px';
     s.appendChild(this.labelRenderer.domElement);
 
-    this.perspective = new PerspectiveCamera(80, s.clientWidth / s.clientHeight);
+    this.perspective = new PerspectiveCamera(this.cameraFov, s.clientWidth / s.clientHeight);
     this.orthographic = new OrthographicCamera(-s.clientWidth / 32,
         s.clientWidth / 32, s.clientHeight / 32, -s.clientHeight / 32, -100, 1000);
     this.orthographic.z = 10;
@@ -100,46 +106,98 @@ ChemViewer.prototype.create = function (selector, options) {
     this.setCameraType('perspective');
     this.makeMaterials();
 
+    this.setupEvents();
+
+    this.render();
+    this.animate();
+}
+
+
+// sets up GUI events
+ChemViewer.prototype.setupEvents = function () {
+    var self = this;
+
     window.addEventListener('resize', function (e) {
-        self.renderer.setSize(s.clientWidth, s.clientHeight);
-        self.labelRenderer.setSize(s.clientWidth, s.clientHeight);
-        self.perspective.aspect = s.clientWidth / s.clientHeight;
+        self.renderer.setSize(self.s.clientWidth, self.s.clientHeight);
+        self.labelRenderer.setSize(self.s.clientWidth, self.s.clientHeight);
+        self.perspective.aspect = self.s.clientWidth / self.s.clientHeight;
         self.perspective.updateProjectionMatrix();
-        self.orthographic.left = -s.clientWidth / 32.0;
-        self.orthographic.right = s.clientWidth / 32.0;
-        self.orthographic.top = s.clientHeight / 32.0;
-        self.orthographic.bottom = -s.clientHeight / 32.0;
+        self.orthographic.left = -self.s.clientWidth / 32.0;
+        self.orthographic.right = self.s.clientWidth / 32.0;
+        self.orthographic.top = self.s.clientHeight / 32.0;
+        self.orthographic.bottom = -self.s.clientHeight / 32.0;
         self.orthographic.updateProjectionMatrix();
         self.render();
     });
 
-    var _this = this;
     document.getElementById('chemviewer_drawingtype').value = this.drawingType;
     document.getElementById('chemviewer_drawingtype').addEventListener('change', function (e) {
-        _this.setDrawingType(e.target.value);
+        self.setDrawingType(e.target.value);
     });
     document.getElementById('chemviewer_cameratype').value = this.cameraType;
     document.getElementById('chemviewer_cameratype').addEventListener('change', function (e) {
-        _this.setCameraType(e.target.value);
+        self.setCameraType(e.target.value);
     });
     document.getElementById('chemviewer_shader').value = this.shader;
     document.getElementById('chemviewer_shader').addEventListener('change', function (e) {
-        _this.setShader(e.target.value);
+        self.setShader(e.target.value);
     });
     document.getElementById('chemviewer_unitcell').checked = this.showUnitCell;
     document.getElementById('chemviewer_unitcell').addEventListener('change', function (e) {
-        _this.toggleUnitCell(e.target.checked);
+        self.toggleUnitCell(e.target.checked);
     });
     document.getElementById('chemviewer_labels').checked = this.showLabels;
     document.getElementById('chemviewer_labels').addEventListener('change', function (e) {
-        _this.toggleLabels(e.target.checked);
+        self.toggleLabels(e.target.checked);
     });
     document.getElementById('chemviewer_save').addEventListener('click', function (e) {
-        _this.save();
+        self.save();
     });
 
-    this.render();
-    this.animate();
+    // keyboard shortcuts
+    document.getElementById('chemviewer_main').tabIndex = 0; // this seems to be needed to detect keyboard events
+    document.getElementById('chemviewer_main').addEventListener('keydown', (e) => {
+        switch(e.key) {
+            case "x":
+                self.positionCamera("x");
+                break;
+            case "y":
+                self.positionCamera("y");
+                break;
+            case "z":
+                self.positionCamera("z");
+                break;
+            case "X":
+                self.positionCamera("x", "-");
+                break;
+            case "Y":
+                self.positionCamera("y", "-");
+                break;
+            case "Z":
+                self.positionCamera("z", "-");
+                break;
+            case "a":
+                self.positionCamera("a");
+                break;
+            case "b":
+                self.positionCamera("b");
+                break;
+            case "c":
+                self.positionCamera("c");
+                break;
+            case "A":
+                self.positionCamera("a", "-");
+                break;
+            case "B":
+                self.positionCamera("b", "-");
+                break;
+            case "C":
+                self.positionCamera("c", "-");
+                break;
+            default:
+                //
+        }
+    });
 }
 
 // Makes materials according to specified shader
@@ -167,25 +225,19 @@ ChemViewer.prototype.makeMaterials = function () {
 // Draws a molecule.
 ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
     var mesh, self, a, scale, j, k, dy, cent, data, v, vectors, points, r,
-        trans, geometry, material, atomColor, maxHeight, maxX, maxY, maxZ,
-        minX, minY, minZ, centerX, centerY, centerZ, cameraZ;
+        trans, geometry, material, atomColor, minXYZ, maxXYZ, maxDist;
     self = this;
     cent = new Vector3();
-    this.current = molecule;
+    self.current = molecule;
 
-    scale = this.drawingType === 'space filling' ? 1.0 : 0.3;
+    scale = self.drawingType === 'space filling' ? 1.0 : 0.3;
 
     // Don't hate on formats without bond information
     if (!molecule.hasOwnProperty('bonds')) { molecule.bonds = []; }
 
     // Draws atoms and saves references
-    maxHeight = 0;
-    maxX = molecule.atoms[0].location[0];
-    maxY = molecule.atoms[0].location[1];
-    minX = molecule.atoms[0].location[0];
-    minY = molecule.atoms[0].location[1];
-    maxZ = molecule.atoms[0].location[2];
-    minZ = molecule.atoms[0].location[2];
+    maxXYZ = [molecule.atoms[0].location[0], molecule.atoms[0].location[1], molecule.atoms[0].location[2]];
+    minXYZ = [molecule.atoms[0].location[0], molecule.atoms[0].location[1], molecule.atoms[0].location[2]];
     for (const [i, atom] of molecule.atoms.entries()) {
         data = self.data[atom.element] || self.data.unknown;
         atomColor = data.color;  // for labels
@@ -210,7 +262,7 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
             labelDiv.className = 'chemviewer_label';
             labelDiv.textContent = atom.label;
             labelDiv.style.color = '#' + atomColor.toString(16);
-            if (!this.showLabels) {
+            if (!self.showLabels) {
                 labelDiv.classList.add("hidden");
             }
             let atomLabel = new CSS2DObject( labelDiv );
@@ -225,30 +277,32 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         mesh.element = atom.element;
         self.atoms.push(mesh);
 
-        maxHeight = Math.max(maxHeight, Math.abs(atom.location[0]), Math.abs(atom.location[1]));
-        maxX = Math.max(maxX, atom.location[0]);
-        maxY = Math.max(maxY, atom.location[1]);
-        maxZ = Math.max(maxZ, atom.location[2]);
-        minX = Math.min(minX, atom.location[0]);
-        minY = Math.min(minY, atom.location[1]);
-        minZ = Math.min(minZ, atom.location[2]);
+        for (let ii=0; ii<3; ii++) {
+            maxXYZ[ii] = Math.max(maxXYZ[ii], atom.location[ii])
+            minXYZ[ii] = Math.min(minXYZ[ii], atom.location[ii])
+        }
     }
 
     // Sets camera position to view whole molecule in bounds with some buffer
     if (resetCamera) {
         self.controls.reset();
-        cameraZ = (maxHeight / Math.tan(Math.PI * self.camera.fov / 360) + maxZ) / 0.8;
-        self.perspective.position.z = cameraZ;
 
-        centerX = (minX + maxX) / 2;
-        centerY = (minY + maxY) / 2;
-        centerZ = (minZ + maxZ) / 2;
-        self.perspective.position.x = centerX;
-        self.perspective.position.y = centerY;
-        self.controls.target.set( centerX, centerY, centerZ ); // pivot point
+        if (self.center.length != 3) {
+            self.center = [0, 0, 0]
+            for (let ii=0; ii<3; ii++) {
+                self.center[ii] = (minXYZ[ii] + maxXYZ[ii]) / 2
+            }
+        }
 
-        self.directionalLight.target.position.set(centerX, centerY, centerZ);
-        this.directionalLight.position.copy(this.camera.position)
+        if (self.cameraDistance == 0) {
+            maxDist = 0;
+            for (let ii=0; ii<3; ii++) {
+                maxDist = Math.max(maxDist, maxXYZ[ii] - self.center[ii])
+            }
+            self.cameraDistance = (maxDist / Math.tan(Math.PI * self.camera.fov / 360) + Math.max(...maxXYZ)) / 0.9;
+        }
+
+        self.positionCamera(self.cameraAxis, self.cameraAxisDirection);
     }
 
     // Bonds require some basic vector math
@@ -302,15 +356,27 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         }
     }
 
-    // If we're dealing with a crystal structure, draw the unit cell
-    if (this.showUnitCell && molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
-        // Some basic conversions to handle math via THREE.Vector3
+    // initialize as XYZ
+    self.unitcell = [
+        new Vector3(1, 0, 0),
+        new Vector3(0, 1, 0),
+        new Vector3(0, 0, 1)
+    ]
+
+    if (molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
         v = new Vector3(0, 0, 0);
-        vectors = [
+        self.unitcell = [
             v.clone().fromArray(molecule.unitcell[0]),
             v.clone().fromArray(molecule.unitcell[1]),
             v.clone().fromArray(molecule.unitcell[2])
         ];
+    }
+
+    // If we're dealing with a crystal structure, draw the unit cell
+    if (self.showUnitCell && molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
+        // Some basic conversions to handle math via THREE.Vector3
+        v = new Vector3(0, 0, 0);
+        vectors = self.unitcell;
         // The eight corners of the unit cell are linear combinations of above
         points = [
             v.clone(), vectors[0], vectors[1], vectors[2],
@@ -332,13 +398,13 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         geometry = new BufferGeometry().setFromPoints( geometryPoints );
         material = new LineBasicMaterial({ color: 0x000000, linewidth: 3 });
 
-        this.corners = new Line(geometry, material);
-        this.scene.add(this.corners);
+        self.corners = new Line(geometry, material);
+        self.scene.add(self.corners);
     }
 
     if (molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
         document.getElementById('chemviewer_unitcell').disabled = false;
-        document.getElementById('chemviewer_unitcell').checked = this.showUnitCell;
+        document.getElementById('chemviewer_unitcell').checked = self.showUnitCell;
         document.getElementById('chemviewer_unitcell_label').classList.remove("disabled");
     } else {
         document.getElementById('chemviewer_unitcell').disabled = true;
@@ -349,11 +415,11 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
     // If drawing in orthographic, controls need to be initialized *after*
     // building the molecule. This should be triggered at most once, and only
     // when imolecule.create($d, {cameraType: 'orthographic'}) is used.
-    if (this.updateCamera) {
-        this.setCameraType('orthographic');
-        this.updateCamera = false;
+    if (self.updateCamera) {
+        self.setCameraType('orthographic');
+        self.updateCamera = false;
     }
-    this.render();
+    self.render();
 }
 
 // Deletes any existing molecules.
@@ -505,11 +571,55 @@ ChemViewer.prototype.setCameraType = function (type) {
     if (cset) {
         this.controls.target.set(cx, cy, cz)
     }
-    this.controls.rotateSpeed = 3;
+    this.controls.rotateSpeed = this.rotateSpeed;
     this.controls.addEventListener('change', function () { self.render(); });
     this.camera.add(this.light);
     this.camera.add(this.directionalLight);
     this.render();
+}
+
+ChemViewer.prototype.positionCamera = function (axis="z", direction="+", positionDirectionalLight=true) {
+    var cameraXYZ, factor, vec, vecUp;
+
+    factor = (direction == "+") ? 1 : -1;
+
+    cameraXYZ = new Vector3( ...this.center );
+    switch(axis) {
+        case "a":
+            vec = this.unitcell[0].clone();
+            vecUp = this.unitcell[2];
+            break;
+        case "b":
+            vec = this.unitcell[1].clone();
+            vecUp = this.unitcell[2];
+            break;
+        case "c":
+            vec = this.unitcell[2].clone();
+            vecUp = this.unitcell[1];
+            break;
+        case "x":
+            vec = new Vector3( 1, 0, 0 );
+            vecUp = new Vector3( 0, 0, 1 );
+            break;
+        case "y":
+            vec = new Vector3( 0, 1, 0 );
+            vecUp = new Vector3( 0, 0, 1 );
+            break;
+        default:
+            vec = new Vector3( 0, 0, 1 );
+            vecUp = new Vector3( 0, 1, 0 );
+    }
+    vec.normalize().multiplyScalar(factor * this.cameraDistance)
+    cameraXYZ.add(vec);
+
+    this.camera.position.copy(cameraXYZ);
+    this.camera.up.copy(vecUp);
+    this.controls.target.set( ...this.center ); // pivot point
+
+    if (positionDirectionalLight) {
+        this.directionalLight.target.position.set( ...this.center );
+        this.directionalLight.position.copy(this.camera.position);
+    }
 }
 
 // Sets shader (toon, basic, phong, lambert) and redraws

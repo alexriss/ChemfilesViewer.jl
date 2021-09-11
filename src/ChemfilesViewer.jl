@@ -5,11 +5,11 @@ using Blink
 using JSON
 using UUIDs
 
+DEBUG = false
 
 path_lib = normpath(@__DIR__, "..", "frontend")
 tpl_html = joinpath(path_lib, "app", "index.html")
 include_js = joinpath(path_lib, "build", "bundle.js")
-
 
 """
     generate_dict_molecule(molecule::Chemfiles.Frame, params::AbstractDict)
@@ -71,12 +71,19 @@ end
     render_dict_molecule(dict_molecule::AbstractDict, window::Blink.Window=nothing)
 
 Renders the molecule from a dictionary containing the atoms, bonds and unit cell. If `window` is given, this window will be reused.
+if `reload_page` is `true`, then the html code will be reloaded.
 Returns the current `window` instance and the id of the chemviewer javascript object.
 """
-function render_dict_molecule(dict_molecule::AbstractDict, window::Blink.Window=nothing)
+function render_dict_molecule(dict_molecule::AbstractDict, window::Union{Blink.Window,Nothing}=nothing; reload_page::Bool=false)
     if window === nothing
         window = Window(async=false)
+        if DEBUG
+            opentools(window)
+        end
+        reload_page = true;
+    end
 
+    if reload_page
         html = read(tpl_html, String)
         chemviewer_id = string(UUIDs.uuid4())
         html = replace(html, "{{ id }}" => chemviewer_id)
@@ -87,19 +94,21 @@ function render_dict_molecule(dict_molecule::AbstractDict, window::Blink.Window=
 
     json_molecule = JSON.json(dict_molecule)
 
-    # check if js functions are initialized
-    for i in 1:100
-        res = @js window typeof(setupChemViewer)
-        if res == "function"
-            break
+    try
+        # check if js functions are initialized
+        for i in 1:100
+            res = @js window typeof(setupChemViewer)
+            if res == "function"
+                break
+            end
+            sleep(0.05)
         end
-        sleep(0.05)
+
+        @js window setupChemViewer()
+        @js window drawJsonString($chemviewer_id, $json_molecule)
+    finally
+        return window, chemviewer_id
     end
-
-    @js window setupChemViewer()
-    @js window drawJsonString($chemviewer_id, $json_molecule)
-
-    return window, chemviewer_id
 end
 
 
@@ -107,12 +116,16 @@ end
     render_molecule(molecule::Chemfiles.Frame, window=nothing)
 
 Renders the `molecule` (a Chemfiles frame). If `window` is not given, a new electron window will be created.
+if `reload_page` is `true`, then the html code will be reloaded.
 Returns the current `window` instance and the id of the chemviewer javascript object.
 """
-function render_molecule(molecule::Chemfiles.Frame, window::Blink.Window=nothing)
+function render_molecule(molecule::Chemfiles.Frame, window::Union{Blink.Window,Nothing}=nothing; reload_page::Bool=false)
     dict_molecule = generate_dict_molecule(molecule)
     return render_dict_molecule(dict_molecule, window)
 end
+
+
+
 
 
 end
