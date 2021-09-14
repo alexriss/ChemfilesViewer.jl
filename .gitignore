@@ -1,5 +1,6 @@
 /Manifest.toml
 /docs/build/
+/docs/Manifest.toml
 /test/*.png
 /todo.txt
 /frontend/node_modules
