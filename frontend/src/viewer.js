@@ -489,16 +489,16 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         vectors = self.unitcell;
         // The eight corners of the unit cell are linear combinations of above
         points = [
-            v.clone(), vectors[0], vectors[1], vectors[2],
+            v.clone(), vectors[0].clone(), vectors[1].clone(), vectors[2].clone(),
             v.clone().add(vectors[0]).add(vectors[1]).add(vectors[2]),
             v.clone().add(vectors[1]).add(vectors[2]),
             v.clone().add(vectors[0]).add(vectors[2]),
             v.clone().add(vectors[0]).add(vectors[1])
         ];
-        // Translate unit cell to center around mof + origin
-        trans = points[4].clone().multiplyScalar(0.5);
+        // Translate unit cell to center
+        trans = new Vector3( ...this.center ).sub(points[4].clone().multiplyScalar(0.5));  // center half unit cell
         for (j = 0; j < points.length; j += 1) {
-            points[j].sub(trans);
+            points[j].add(trans);
         }
         // Draw the box line-by-line
         const geometryPoints = [];
