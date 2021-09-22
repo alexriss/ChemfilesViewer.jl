@@ -42966,6 +42966,7 @@
 	    this.scene.add(this.perspective);
 	    this.scene.add(this.orthographic);
 
+	    this.updateCamera = (this.cameraType === 'orthographic');  // everything is sitll created in perspective-type and afterwards updated
 	    this.setCameraType('perspective');
 	    this.makeMaterials();
 
@@ -43613,15 +43614,30 @@
 
 	// Runs the main window animation in an infinite loop
 	ChemViewer.prototype.animate = function () {
-	    var self = this, w, h, aspect;
+	    var self = this, w, h, aspect, frustum, frustumWidth, frustumHeight, frustumAspect;
 	    window.requestAnimationFrame(function () {
 	        return self.animate();
 	    });
 	    if (this.saveImage) {
 	        w = this.s.clientWidth; h = this.s.clientHeight;
-	        aspect = this.camera.aspect;
+	        if (this.cameraType == "orthographic") {
+	            frustum = [this.camera.left, this.camera.right, this.camera.top, this.camera.bottom];
 
-	        this.camera.aspect = this.renderWidth / this.renderHeight;
+	            aspect = this.renderWidth / this.renderHeight;
+	            frustumWidth = this.camera.right - this.camera.left;
+	            frustumHeight = this.camera.top - this.camera.bottom;
+	            frustumAspect = frustumWidth / frustumHeight;
+	            if (aspect < frustumAspect) {
+	                this.camera.top = frustumWidth / aspect / 2;
+	                this.camera.bottom = -frustumWidth / aspect / 2 ;
+	            } else {
+	                this.camera.left = -frustumHeight * aspect / 2;
+	                this.camera.right = frustumHeight * aspect / 2;
+	            }
+	        } else {
+	            aspect = this.camera.aspect;
+	            this.camera.aspect = this.renderWidth / this.renderHeight;
+	        }
 	        this.camera.updateProjectionMatrix();
 	        this.renderer.setSize(this.renderWidth, this.renderHeight);
 	        this.labelRenderer.setSize(this.renderWidth, this.renderHeight);
@@ -43633,7 +43649,15 @@
 
 	        this.renderer.setSize(w, h);
 	        this.labelRenderer.setSize(w, h);
-	        this.camera.aspect = aspect;
+
+	        if (this.cameraType == "orthographic") {
+	            this.camera.left = frustum[0];
+	            this.camera.right = frustum[1];
+	            this.camera.top = frustum[2];
+	            this.camera.bottom = frustum[3];
+	        } else {
+	            this.camera.aspect = aspect;
+	        }
 	        this.camera.updateProjectionMatrix();
 
 	        this.saveImage = false;
