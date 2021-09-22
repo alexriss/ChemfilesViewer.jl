@@ -19,6 +19,11 @@ tpl_html = joinpath(path_lib, "app", "index.html")
 include_js = joinpath(path_lib, "build", "bundle.js")
 
 
+isijulia() = isdefined(Main, :IJulia) && Main.IJulia.inited
+
+ispluto() = isdefined(Main, :PlutoRunner)
+
+
 """
     generate_dict_molecule(molecule::Chemfiles.Frame)
 
@@ -197,7 +202,8 @@ Set options for the render. Available options are:
 - `showUnitCell`: `true` *(default)*, `false`  
 - `showLabels`: `true`, `false` *(default)*  
 - `cameraFov`: field of view of the perspective camera, default is `40`  
-- `cameraDistance`: distance of the perspective camera, will be automatically calculated if left at `0`  
+- `cameraDistance`: distance of the perspective camera, will be automatic
+- `cameraZoom`: camera zoom, default is `1`  
 - `cameraAxis`: set the camera view along this axis (`x`, `y`, `z` *(default)* or the unit cell vectors `a`, `b`, `c`), see also [`set_camera_position`](@ref)  
 - `cameraAxisDirection`: direction of the camera along `cameraAxis`: `+` *(default)*, `-`  
 - `hemisphereLightIntensity`: light intensity of hemiphere light, defaults to `0.8`  

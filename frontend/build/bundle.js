@@ -42899,6 +42899,7 @@
 	        "showLabels": false,
 	        "cameraFov": 40,
 	        "cameraDistance": 0,
+	        "cameraZoom": 1,
 	        "cameraAxis": "z",
 	        "cameraAxisDirection": "+",
 	        "hemisphereLightIntensity": 0.8,
@@ -43047,6 +43048,11 @@
 	            if (this.cameraDistance == 0) {
 	                this.cameraDistance = this.cameraDistanceOriginal;
 	            }
+	        }
+	        if (this.cameraZoom != options.cameraZoom) {
+	            this.cameraZoom = options.cameraZoom;
+	            this.camera.zoom = this.cameraZoom;
+	            this.camera.updateProjectionMatrix();
 	        }
 	        if (options.hasOwnProperty("cameraAxis")) {
 	            this.positionCamera(options.cameraAxis, options.cameraAxisDirection);

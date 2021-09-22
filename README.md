@@ -21,7 +21,8 @@ mol = read(trajectory)
 
 # render molecule
 viewer_id = render_molecule(mol)
-viewer_id = render_molecule(mol, chemviewer_id=viewer_id)  # render another molecule in the same window
+# render another molecule in the same window
+viewer_id = render_molecule(mol, chemviewer_id=viewer_id)
 
 # change properties
 d = generate_dict_molecule(mol)
