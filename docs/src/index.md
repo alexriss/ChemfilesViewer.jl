@@ -14,6 +14,8 @@ A julia library to visualize chemical molecules and other structures in the [Che
 ## Usage
 
 ```
+using ChemfilesViewer
+
 # read molecule using Chemfiles
 using Chemfiles
 trajectory = Trajectory("mol.sdf")
@@ -45,6 +47,6 @@ save_image("test.png")
 ```
 
 Use mouse to rotate, zoom and pan. Keyboard shortcuts `x`, `y`, `z` set the view along the x, y and z axis.
-Analogously, `a`, `b`, `c` set the view alonmg the unit cell vectors. Uppercase letters (`X`, `Y`, `Z`, `A`, `B`, `C`) set the opposite view direction.
+Analogously, `a`, `b`, `c` set the view along the unit cell vectors. Uppercase letters (`X`, `Y`, `Z`, `A`, `B`, `C`) set the opposite view direction.
 
 A more detailed description can be found in the [Reference](@ref)
