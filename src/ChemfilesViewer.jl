@@ -70,7 +70,7 @@ end
     get_current_chemviewer_id()
 
 Returns the id of the current chemviewer instance. This can be passed to the `chemviewer_id` parameters
-in the functions [`render_molecule`](@ref), [`render_dict_molecule`]((@ref)), [`set_options!`](@ref), [`set_camera_position!`]((@ref)).
+in the functions [`render_molecule`](@ref), [`render_dict_molecule`](@ref), [`set_options!`](@ref), [`set_camera_position!`](@ref).
 """
 function get_current_chemviewer_id()
     return current_chemviewer_id
@@ -371,7 +371,7 @@ Set options for the render. Available options are:
 - `cameraFov`: field of view of the perspective camera, default is `40`  
 - `cameraDistance`: distance of the perspective camera, will be automatic
 - `cameraZoom`: camera zoom, default is `1`  
-- `cameraAxis`: set the camera view along this axis (`x`, `y`, `z` *(default)* or the unit cell vectors `a`, `b`, `c`), see also [`set_camera_position`](@ref)  
+- `cameraAxis`: set the camera view along this axis (`x`, `y`, `z` *(default)* or the unit cell vectors `a`, `b`, `c`), see also [`set_camera_position!`](@ref)  
 - `cameraAxisDirection`: direction of the camera along `cameraAxis`: `+` *(default)*, `-`  
 - `hemisphereLightIntensity`: light intensity of hemiphere light, defaults to `0.8`  
 - `directionalLightIntensity`: light intensity of directional light, defaults to `0.05`  
@@ -399,7 +399,7 @@ end
     function save_image(filename::AbstractString; chemviewer_id::String="")
 
 Save a png image of the render to `filename`. The image size is specified by the parameters `renderWidth` and `renderHeight`,
-which can be set by [`set_options`](@ref).
+which can be set by [`set_options!`](@ref).
 If the `chemviewer_id` is not specified, the most recent instance is used. 
 """
 function save_image(filename::AbstractString; chemviewer_id::String="")

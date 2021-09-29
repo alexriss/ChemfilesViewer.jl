@@ -6,4 +6,5 @@
 
 ```@autodocs
 Modules = [ChemfilesViewer]
+Private = false
 ```
