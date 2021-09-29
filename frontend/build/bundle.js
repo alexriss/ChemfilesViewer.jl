@@ -42889,7 +42889,7 @@
 
 
 	// Creates a new instance of imolecule
-	ChemViewer.prototype.create = function (selector, options) {
+	ChemViewer.prototype.create = function (selector, id, options) {
 	    this.optionDefaults = {
 	        "shader": "lambert",
 	        "drawingType": "ball and stick",
@@ -42910,9 +42910,11 @@
 	        "renderHeight": 1600
 	    };
 
-	    var s = document.querySelector(selector), hasWebgl;
+	    var s = document.querySelector(selector + "_" + id), hasWebgl;
 	    options = options || {};
 	    this.s = s;
+
+	    this.id = id;
 
 	    this.setOptions(options, true);
 
@@ -42977,6 +42979,11 @@
 	    this.animate();
 	};
 
+
+	// gets element with the right id
+	ChemViewer.prototype.getElementById = function (el) {
+	    return document.getElementById(el + "_" + this.id);
+	};
 
 	// create default geometries
 	ChemViewer.prototype.makeGeometries = function () {
@@ -43109,36 +43116,36 @@
 	        self.render();
 	    });
 
-	    document.getElementById('chemviewer_drawingtype').value = this.drawingType;
-	    document.getElementById('chemviewer_drawingtype').addEventListener('change', function (e) {
+	    this.getElementById('chemviewer_drawingtype').value = this.drawingType;
+	    this.getElementById('chemviewer_drawingtype').addEventListener('change', function (e) {
 	        self.setDrawingType(e.target.value);
 	    });
-	    document.getElementById('chemviewer_cameratype').value = this.cameraType;
-	    document.getElementById('chemviewer_cameratype').addEventListener('change', function (e) {
+	    this.getElementById('chemviewer_cameratype').value = this.cameraType;
+	    this.getElementById('chemviewer_cameratype').addEventListener('change', function (e) {
 	        self.setCameraType(e.target.value);
 	    });
-	    document.getElementById('chemviewer_shader').value = this.shader;
-	    document.getElementById('chemviewer_shader').addEventListener('change', function (e) {
+	    this.getElementById('chemviewer_shader').value = this.shader;
+	    this.getElementById('chemviewer_shader').addEventListener('change', function (e) {
 	        self.setShader(e.target.value);
 	    });
-	    document.getElementById('chemviewer_unitcell').checked = this.showUnitCell;
-	    document.getElementById('chemviewer_unitcell').addEventListener('change', function (e) {
+	    this.getElementById('chemviewer_unitcell').checked = this.showUnitCell;
+	    this.getElementById('chemviewer_unitcell').addEventListener('change', function (e) {
 	        self.toggleUnitCell(e.target.checked);
 	    });
-	    document.getElementById('chemviewer_labels').checked = this.showLabels;
-	    document.getElementById('chemviewer_labels').addEventListener('change', function (e) {
+	    this.getElementById('chemviewer_labels').checked = this.showLabels;
+	    this.getElementById('chemviewer_labels').addEventListener('change', function (e) {
 	        self.toggleLabels(e.target.checked);
 	    });
-	    document.getElementById('chemviewer_reset').addEventListener('click', function (e) {
+	    this.getElementById('chemviewer_reset').addEventListener('click', function (e) {
 	        self.setOptions();
 	    });
-	    document.getElementById('chemviewer_save').addEventListener('click', function (e) {
+	    this.getElementById('chemviewer_save').addEventListener('click', function (e) {
 	        self.save(true);
 	    });
 
 	    // keyboard shortcuts
-	    document.getElementById('chemviewer_main').tabIndex = 0; // this seems to be needed to detect keyboard events
-	    document.getElementById('chemviewer_main').addEventListener('keydown', (e) => {
+	    this.getElementById('chemviewer_main').tabIndex = 0; // this seems to be needed to detect keyboard events
+	    this.getElementById('chemviewer_main').addEventListener('keydown', (e) => {
 	        switch(e.key) {
 	            case "x":
 	                self.positionCamera("x");
@@ -43386,13 +43393,13 @@
 	    }
 
 	    if (molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
-	        document.getElementById('chemviewer_unitcell').disabled = false;
-	        document.getElementById('chemviewer_unitcell').checked = self.showUnitCell;
-	        document.getElementById('chemviewer_unitcell_label').classList.remove("disabled");
+	        self.getElementById('chemviewer_unitcell').disabled = false;
+	        self.getElementById('chemviewer_unitcell').checked = self.showUnitCell;
+	        self.getElementById('chemviewer_unitcell_label').classList.remove("disabled");
 	    } else {
-	        document.getElementById('chemviewer_unitcell').disabled = true;
-	        document.getElementById('chemviewer_unitcell').checked = false;
-	        document.getElementById('chemviewer_unitcell_label').classList.add("disabled");
+	        self.getElementById('chemviewer_unitcell').disabled = true;
+	        self.getElementById('chemviewer_unitcell').checked = false;
+	        self.getElementById('chemviewer_unitcell_label').classList.add("disabled");
 	    }
 
 	    // If drawing in orthographic, controls need to be initialized *after*
@@ -43464,7 +43471,7 @@
 	ChemViewer.prototype.setDrawingType = function (type) {
 	    // Some case-by-case logic to avoid clearing and redrawing the canvas
 	    var i;
-	    type = this.setSelect(document.getElementById("chemviewer_drawingtype"), type);
+	    type = this.setSelect(this.getElementById("chemviewer_drawingtype"), type);
 	    if (this.drawingType === 'ball and stick') {
 	        if (type === 'wireframe') {
 	            for (i = 0; i < this.atoms.length; i += 1) {
@@ -43527,7 +43534,7 @@
 	ChemViewer.prototype.setCameraType = function (type) {
 	    var self = this, cx, cy, cz, cset;
 
-	    type = this.setSelect(document.getElementById("chemviewer_cameratype"), type);
+	    type = this.setSelect(this.getElementById("chemviewer_cameratype"), type);
 
 	    this.cameraType = type;
 	    if (type === 'orthographic') {
@@ -43611,7 +43618,7 @@
 
 	// Sets shader (basic, phong, lambert) and redraws
 	ChemViewer.prototype.setShader = function (shader) {
-	    shader = this.setSelect(document.getElementById('chemviewer_shader'), shader);
+	    shader = this.setSelect(this.getElementById('chemviewer_shader'), shader);
 	    this.shader = shader;
 	    this.makeMaterials();
 	    this.clear();
@@ -43687,7 +43694,7 @@
 	        this.scene[toggle ? 'add' : 'remove'](this.corners);
 	        this.render();
 	    }
-	    document.getElementById("chemviewer_unitcell").checked = toggle;
+	    this.getElementById("chemviewer_unitcell").checked = toggle;
 	};
 
 	// shows or hides the labels
@@ -43699,7 +43706,7 @@
 	    } else {
 	        labels.forEach(e => e.classList.add("hidden"));
 	    }
-	    document.getElementById("chemviewer_labels").checked = toggle;
+	    this.getElementById("chemviewer_labels").checked = toggle;
 	    this.render();
 	};
 

@@ -20,22 +20,25 @@ trajectory = Trajectory("mol.sdf")
 mol = read(trajectory)
 
 # render molecule
-viewer_id = render_molecule(mol)
+render_molecule(mol)
 # render another molecule in the same window
-viewer_id = render_molecule(mol, chemviewer_id=viewer_id) 
+render_molecule!(mol)
 
+# save reference to last used output
+viewer_id = get_current_chemviewer_id()
+    
 # change properties
 d = generate_dict_molecule(mol)
 d["atoms"][1]["color"] = "#f00000"
 d["atoms"][1]["label"] = "Important atom"
 d["atoms"][1]["radius"] = 1.0
-viewer_id = render_dict_molecule(d, chemviewer_id=viewer_id)
+render_dict_molecule(d, chemviewer_id=viewer_id)
 
 # change view
-set_camera_position("x", "-")
-set_options(Dict("drawingType" => "wireframe"))
-set_camera_position("c", "+")
-set_options(Dict("drawingType" => "ball and stick"))
+set_camera_position!("x", "-")
+set_options!(Dict("drawingType" => "wireframe"))
+set_camera_position!("c", "+")
+set_options!(Dict("drawingType" => "ball and stick"))
 
 # save image
 save_image("test.png")

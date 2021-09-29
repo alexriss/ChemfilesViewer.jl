@@ -49,12 +49,12 @@
             cursor:pointer;
         }
 
-        #chemviewer_save {
+        .chemviewer_save {
             background-color: #e6dbdb;
             border: 0.1em dashed #a0a0af;
         }
 
-        #chemviewer_reset {
+        .chemviewer_reset {
             background-color: #e6e6e6;
             border: 0.1em solid #afafaf;
         }
@@ -77,12 +77,12 @@
             color: #aaa;
         }
 
-        #chemviewer_container {
+        .chemviewer_container {
             display: flex;
             align-items: stretch;
         }
 
-        #chemviewer {
+        .chemviewer_render {
             width: 96%;
             min-height: 400px;
             margin-left: auto;
@@ -90,12 +90,12 @@
             position: relative;
         }
 
-        #chemviewer .chemviewer_label {
+        .chemviewer_render .chemviewer_label {
             text-shadow: -1px 1px 1px rgba(0,0,0,1);
             font-size: 1.2em;
         }
 
-        #chemviewer .hidden {
+        .chemviewer_render .hidden {
             display: none;
         }
 
@@ -104,31 +104,31 @@
 
 <body>
 
-    <div class="chemviewer_main" id="chemviewer_main">
+    <div class="chemviewer_main" id="chemviewer_main_{{ id }}">
         <div class="chemviewer_row chemviewer_header">
             <div class="chemviewer_header">
-                <select class="chemviewer_buttons" id="chemviewer_drawingtype">
+                <select class="chemviewer_buttons" id="chemviewer_drawingtype_{{ id }}">
                     <option value="ball and stick">ball and stick</option>
                     <option value="space filling">space filling</option>
                     <option value="wireframe">wireframe</option>
                 </select>
-                <select class="chemviewer_buttons" id="chemviewer_shader">
+                <select class="chemviewer_buttons" id="chemviewer_shader_{{ id }}">
                     <option value="basic">basic</option>
                     <option value="phong">phong</option>
                     <option value="lambert">lambert</option>
                 </select>
-                <select class="chemviewer_buttons" id="chemviewer_cameratype">
+                <select class="chemviewer_buttons" id="chemviewer_cameratype_{{ id }}">
                     <option value="perspective">perspective</option>
                     <option value="orthographic">orthographic</option>
                 </select>
-                <label id="chemviewer_unitcell_label"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_unitcell" checked> unit cell</label>
-                <label id="chemviewer_labels_label"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_labels" checked> labels</label>
-                <button class="chemviewer_buttons" id="chemviewer_reset">reset</button>
-                <button class="chemviewer_buttons" id="chemviewer_save">save</button>
+                <label id="chemviewer_unitcell_label_{{ id }}"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_unitcell_{{ id }}" checked> unit cell</label>
+                <label id="chemviewer_labels_label_{{ id }}"><input class="chemviewer_buttons" type="checkbox" id="chemviewer_labels_{{ id }}" checked> labels</label>
+                <button class="chemviewer_buttons chemviewer_reset" id="chemviewer_reset_{{ id }}">reset</button>
+                <button class="chemviewer_buttons chemviewer_save" id="chemviewer_save_{{ id }}">save</button>
             </div>
         </div>
-        <div id="chemviewer_container" class="chemviewer_row chemviewer_content">
-            <div id="chemviewer"></div>
+        <div id="chemviewer_container_{{ id }}" class="chemviewer_container chemviewer_row chemviewer_content">
+            <div class="chemviewer_render" id="chemviewer_{{ id }}"></div>
         </div>
         <div class="chemviewer_row chemviewer_footer">
             <span></span>
@@ -146,9 +146,22 @@
 
             const chemviewer_id = '{{ id }}';
             const chemviewer = new ChemViewer();
-            chemviewer.create('#chemviewer', options);
-            // chemviewer.drawJsonFile("fe_mof_74.json");
+            chemviewer.create('#chemviewer', chemviewer_id, options);
             window.chemviewer_objects[chemviewer_id] = chemviewer;
+        }
+
+        function setupChemViewerAndDraw_WebIO(ChemViewer, jsonString, options={}) {
+            // make accessible from the outside
+            if (!window.hasOwnProperty("chemviewer_objects")) {
+                window.chemviewer_objects = {}
+            }
+
+            const chemviewer_id = '{{ id }}';
+            const chemviewer = new ChemViewer();
+            chemviewer.create('#chemviewer', chemviewer_id, options);
+            window.chemviewer_objects[chemviewer_id] = chemviewer;
+
+            drawJsonString(chemviewer_id, jsonString);
         }
 
         function sleep(milliseconds) {
@@ -156,6 +169,29 @@
         }
 
         // for access from julia
+
+        function communicate(args, _webIOScope) {
+            // WebIO communication
+            let chemviewer_id = args[0];
+            let what = args[1];
+            let val = args[2];
+
+            if (what == "drawJsonString") {
+                drawJsonString(chemviewer_id, val);
+            } else if (what == "setOptions") {
+                setOptions(chemviewer_id, val);
+            } else if (what == "getPngString") {
+                getPngString(chemviewer_id).then(pngStr => {
+                    window.chemviewer_objects["_webIOScope_" + chemviewer_id].setObservableValue("from_js",
+                        [
+                            chemviewer_id,
+                            "returnPngString",
+                            {"val": pngStr, "jobID": val["jobID"]}
+                        ]
+                    );
+                });
+            }
+        }
 
         async function drawJsonString(id, jsonString) {
             for (let i=0;i<50;i++) {
@@ -180,7 +216,7 @@
             window.chemviewer_objects[id].setOptions(dict);
         }
 
-        async function get_png_string(id) {
+        async function getPngString(id) {
             for (let i=0;i<50;i++) {
                 if (!window.chemviewer_objects.hasOwnProperty(id)) {
                     await sleep(100);

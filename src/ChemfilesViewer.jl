@@ -5,14 +5,31 @@ using Chemfiles
 using Blink
 using JSON
 using UUIDs
+using WebIO
 
-export generate_dict_molecule, render_dict_molecule, render_molecule, set_camera_position, set_options, save_image
+export generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
+    render_molecule, render_molecule!, set_camera_position!, set_options!, save_image,
+    get_current_chemviewer_id
+
+
+# javascript jobs
+mutable struct Job
+    finished::Bool
+    parameters::Dict{String,Any}
+end
+
+# Observables for bidirectional communication
+mutable struct BiObservable
+    julia::Observable
+    js::Observable
+end
 
 
 DEBUG = false
 
 current_chemviewer_id = ""  # holds the last used chemviewer_id
-chemviewer_id_window = Dict{String, Blink.Window}()  # holds the windows associated with the respective chemviewer_ids
+chemviewer_id_reference = Dict{String, Union{Blink.Window, BiObservable}}()  # holds the windows or observables (see WebIO) associated with the respective chemviewer_ids
+jobs = Dict{String, Job}()  # keeps track of javascript jobs
 
 path_lib = normpath(@__DIR__, "..", "frontend")
 tpl_html = joinpath(path_lib, "app", "index.html")
@@ -22,6 +39,42 @@ include_js = joinpath(path_lib, "build", "bundle.js")
 isijulia() = isdefined(Main, :IJulia) && Main.IJulia.inited
 
 ispluto() = isdefined(Main, :PlutoRunner)
+
+
+"""
+    get_reference(chemviewer_id::String)
+
+Helper function to get the most recent output reference (i.e. `Window` or Vector of `Observable`) associated with the given `chemviewer_id`. 
+"""
+function get_reference(chemviewer_id::String)
+    if chemviewer_id == ""
+        chemviewer_id = current_chemviewer_id
+    end
+    if chemviewer_id == ""
+        error("Can't get current chemviewer_id. Try specifying the chemviewer_id parameter manually.")
+        return nothing, ""
+    end
+    if !(haskey(chemviewer_id_reference, chemviewer_id))
+        @info "Can't get chemviewer_id $chemviewer_id."  # no error, we can continue
+        return nothing, ""
+    end
+
+    # save current window and chemviewer_id
+    global current_chemviewer_id = chemviewer_id
+    
+    return chemviewer_id_reference[chemviewer_id], chemviewer_id
+end
+
+
+"""
+    get_current_chemviewer_id()
+
+Returns the id of the current chemviewer instance. This can be passed to the `chemviewer_id` parameters
+in the functions [`render_molecule`](@ref), [`render_dict_molecule`]((@ref)), [`set_options!`](@ref), [`set_camera_position!`]((@ref)).
+"""
+function get_current_chemviewer_id()
+    return current_chemviewer_id
+end
 
 
 """
@@ -81,14 +134,61 @@ end
 
 
 """
-    function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+    render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
 
 Render the molecule from a dictionary containing the atoms, bonds and unit cell. If `chemviewer_id` is not given, a new electron window will be created.
 Additional `options` for rendering can be provided.
-Returns the id of the current chemviewer javascript object.
+The parameter `output` specfies whether to display the render in an external window (when set to `external`)
+or inline within Jupyter or Pluto (when set to `inline`).
+Leaving `output` empty will autodetect the output medium.
 """
-function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+    iswebio = isijulia() || ispluto()
+
+    if !(output in ["external", "inline", ""])
+        @info """Output parameter should be "external", "inline" or left empty ofr auto-detection."""
+        output = ""
+    end
+    if (output == "inline" && !iswebio)
+        @info """Did not detect Jupyter or Pluto environment. Inline display will likely not work."""
+    end
+
+    if output == "external"
+        render_dict_molecule_external(dict_molecule, chemviewer_id=chemviewer_id, options=options)
+    elseif output == "inline"
+        render_dict_molecule_inline(dict_molecule, chemviewer_id=chemviewer_id, options=options)
+    elseif iswebio
+        render_dict_molecule_inline(dict_molecule, chemviewer_id=chemviewer_id, options=options)
+    else
+        render_dict_molecule_external(dict_molecule, chemviewer_id=chemviewer_id, options=options)
+    end
+end
+
+"""
+    render_dict_molecule!(dict_molecule::AbstractDict{String,<:Any}; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+
+Call [`render_dict_molecule`](@ref) for the last used output plot.
+"""
+function render_dict_molecule!(dict_molecule::AbstractDict{String,<:Any}; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+    render_dict_molecule(dict_molecule, chemviewer_id=current_chemviewer_id, options=options, output=output)
+end
+
+    
+"""
+    function render_dict_molecule_external(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+
+Render the molecule from a dictionary containing the atoms, bonds and unit cell. If `chemviewer_id` is not given, a new electron window will be created.
+Additional `options` for rendering can be provided. The render is shown in an external window.
+"""
+function render_dict_molecule_external(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
     chemviewer_setup_needed = false
+    if chemviewer_id != ""
+        window, chemviewer_id = get_reference(chemviewer_id)
+        if !(typeof(window) == ChemfilesViewer.Window) || !Blink.AtomShell.active(window)  # user closed the window
+            chemviewer_id = ""
+        end
+    end
+
     if chemviewer_id == ""
         chemviewer_setup_needed = true
         window = Window(async=false)
@@ -101,12 +201,12 @@ function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemvie
         html = read(tpl_html, String)
         chemviewer_id = string(UUIDs.uuid4())
 
-        global chemviewer_id_window[chemviewer_id] = window
+        global chemviewer_id_reference[chemviewer_id] = window
 
         html = replace(html, "{{ id }}" => chemviewer_id)
         body!(window, html)
     else
-        window, chemviewer_id = get_window_chemviewer_id(chemviewer_id)
+        window, chemviewer_id = get_reference(chemviewer_id)
     end
 
     # save current window and chemviewer_id
@@ -124,6 +224,8 @@ function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemvie
 
         if chemviewer_setup_needed
             @js window setupChemViewer($options)
+        else
+            set_options(options, chemviewer_id=chemviewer_id)
         end
         json_molecule = JSON.json(dict_molecule)
         @js window drawJsonString($chemviewer_id, $json_molecule)
@@ -133,7 +235,82 @@ function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemvie
         @show msg
         @show msg_full
     finally
-        return chemviewer_id
+        return
+    end
+end
+
+
+"""
+    function render_dict_molecule_inline(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+
+Render the molecule from a dictionary containing the atoms, bonds and unit cell. If `chemviewer_id` is not given, a new electron window will be created.
+Additional `options` for rendering can be provided. The render is shown inline in [Jupyter](https://jupyter.org/) or [Pluto](https://github.com/fonsp/Pluto.jl).
+"""
+function render_dict_molecule_inline(dict_molecule::AbstractDict{String,<:Any}; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+    if chemviewer_id != ""
+        bi_obs,  chemviewer_id = get_reference(chemviewer_id)
+        if (typeof(bi_obs) != BiObservable)
+            chemviewer_id = ""
+        end
+    end
+    
+    json_molecule = JSON.json(dict_molecule)
+
+    if chemviewer_id == ""
+        scope = Scope(imports=[ChemfilesViewer.include_js])
+        obs = Observable(scope, "from_julia", ["chemviewer_id", "what", Dict()])
+        obs_js = Observable(scope, "from_js", ["chemviewer_id", "what", Dict()])
+
+        html = read(tpl_html, String)
+        chemviewer_id = string(UUIDs.uuid4())
+        html = replace(html, "{{ id }}" => chemviewer_id)
+
+        global chemviewer_id_reference[chemviewer_id] = BiObservable(obs, obs_js)
+        global current_chemviewer_id = chemviewer_id  # save current window and chemviewer_id
+
+        # javascript handler reacts to changes sent from julia
+        onjs(obs, @js args -> begin
+            window.__webIOScope = _webIOScope
+            communicate(args)
+        end)
+
+        # julia handler reacts to changes sent from javascript
+        on(obs_js) do value
+            handle_job(value)
+        end
+
+        # make the ChemViewer class and the _webIOScope accessible within the js functions
+        onimport(scope, js"""
+            function (val) {
+                setupChemViewerAndDraw_WebIO(val, $json_molecule, $options)
+                window.chemviewer_objects["_webIOScope_" + $chemviewer_id] = _webIOScope;
+            }
+        """)
+        return scope(HTML(html))
+    else
+        bi_obs, chemviewer_id = get_reference(chemviewer_id)
+
+        global current_chemviewer_id = chemviewer_id  # save current window and chemviewer_id
+        bi_obs.julia[] = [chemviewer_id, "setOptions", options]
+        bi_obs.julia[] = [chemviewer_id, "drawJsonString", json_molecule]
+        return
+    end
+end
+
+
+"""
+    function handle_job(value::Arra{Any,Any})
+
+Handles responses from javascript jobs.
+"""
+function handle_job(value::Vector{Any})
+    global jobs
+    job_id = value[3]["jobID"]
+    if value[2] == "returnPngString"
+        write_image(jobs[job_id].parameters["filename"], value[3]["val"])
+        
+        jobs[job_id].finished = true  # this is not really necessary, but can be used in the future to give an ok to the user
+        delete!(jobs, job_id)
     end
 end
 
@@ -143,11 +320,22 @@ end
 
 Render the `molecule` (a Chemfiles frame). If `chemviewer_id` is not given, a new electron window will be created.
 Additional `options` for rendering can be provided.
-Returns the id of the current chemviewer javascript object.
+The parameter `output` specfies whether to display the render in an external window (when set to `external`)
+or inline within Jupyter or Pluto (when set to `inline`).
+Leaving `output` empty will autodetect the output medium.
 """
-function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
     dict_molecule = generate_dict_molecule(molecule)
-    return render_dict_molecule(dict_molecule, chemviewer_id=chemviewer_id, options=options)
+    return render_dict_molecule(dict_molecule, chemviewer_id=chemviewer_id, options=options, output=output)
+end
+
+"""
+    render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+
+Call [`render_molecule`](@ref) for the last used output plot.
+"""
+function render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+    return render_molecule(molecule, chemviewer_id=chemviewer_id, options=options, output=output)
 end
 
 
@@ -158,35 +346,14 @@ Set the camera position to be along one of the axis `x`, `y`, `z` or the unit ce
 The direction of `+` or `-` specifies in which direction the camera is moved.
 If the `chemviewer_id` is not specified, the most recent instance is used. 
 """
-function set_camera_position(axis::String="z", direction::String="+"; chemviewer_id::String="")
+function set_camera_position!(axis::String="z", direction::String="+"; chemviewer_id::String="")
     d = Dict(
         "cameraAxis" => axis,
         "cameraAxisDirection" => direction
     )
     
-    set_options(d, chemviewer_id=chemviewer_id)
+    set_options!(d, chemviewer_id=chemviewer_id)
     return
-end
-
-
-"""
-    get_window_chemviewer_id(window::Union{Blink.Window,Nothing}, chemviewer_id::String)
-
-Helper function to get the most recent `window` and `chemviewer_id` parameters. 
-"""
-function get_window_chemviewer_id(chemviewer_id::String)
-    if chemviewer_id == ""
-        chemviewer_id = current_chemviewer_id
-    end
-    if chemviewer_id == ""
-        error("Can't get current chemviewer_id. Try specifying the chemviewer_id parameter manually.")
-        return nothing, ""
-    end
-
-    # save current window and chemviewer_id
-    global current_chemviewer_id = chemviewer_id
-    
-    return chemviewer_id_window[chemviewer_id], chemviewer_id
 end
 
 
@@ -215,9 +382,15 @@ Set options for the render. Available options are:
 
 If the `chemviewer_id` is not specified, the most recent instance is used. 
 """
-function set_options(options::AbstractDict{String,<:Any}; chemviewer_id::String="")
-    window, chemviewer_id = get_window_chemviewer_id(chemviewer_id)
-    @js window setOptions($chemviewer_id, $options)
+function set_options!(options::AbstractDict{String,<:Any}; chemviewer_id::String="")
+    window_obs, chemviewer_id = get_reference(chemviewer_id)
+    if typeof(window_obs) == Blink.Window
+        @js window_obs setOptions($chemviewer_id, $options)
+    elseif typeof(window_obs) == BiObservable
+        window_obs.julia[] = [chemviewer_id, "setOptions", options]
+    else
+        @error """Cannot find existing render. Call "render_molecule" first."""
+    end
     return
 end
 
@@ -230,9 +403,30 @@ which can be set by [`set_options`](@ref).
 If the `chemviewer_id` is not specified, the most recent instance is used. 
 """
 function save_image(filename::AbstractString; chemviewer_id::String="")
-    window, chemviewer_id = get_window_chemviewer_id(chemviewer_id)
+    window_obs, chemviewer_id = get_reference(chemviewer_id)
+    if typeof(window_obs) == Blink.Window
+        img_base64 = @js window getPngString($chemviewer_id)
+    elseif typeof(window_obs) == BiObservable
+        job_id = string(UUIDs.uuid4())
+        global jobs[job_id] = Job(false, Dict("command" => "getPngString", "filename" => filename))
+        window_obs.julia[] = [chemviewer_id, "getPngString", Dict("jobID" => job_id)]
+        # image will be saved in the `handle_job` function
+    else
+        @error """Cannot find existing render output. Call "render_molecule" first."""
+    end
 
-    img_base64 = @js window get_png_string($chemviewer_id)
+    write_image(filename, img_base64)
+
+    return
+end
+
+
+"""
+    function write_image(filename::AbstractString, img_base64::String)
+
+Saves a base64 image string to a file.
+"""
+function write_image(filename::AbstractString, img_base64::String)
     img = base64decode(img_base64[23:end])
     write(filename, img)
     return
