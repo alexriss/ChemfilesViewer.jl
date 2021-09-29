@@ -5,22 +5,25 @@ trajectory = Trajectory(&quot;mol.sdf&quot;)
 mol = read(trajectory)
 
 # render molecule
-viewer_id = render_molecule(mol)
+render_molecule(mol)
 # render another molecule in the same window
-viewer_id = render_molecule(mol, chemviewer_id=viewer_id) 
+render_molecule!(mol)
 
+# save reference to last used output
+viewer_id = get_current_chemviewer_id()
+    
 # change properties
 d = generate_dict_molecule(mol)
 d[&quot;atoms&quot;][1][&quot;color&quot;] = &quot;#f00000&quot;
 d[&quot;atoms&quot;][1][&quot;label&quot;] = &quot;Important atom&quot;
 d[&quot;atoms&quot;][1][&quot;radius&quot;] = 1.0
-viewer_id = render_dict_molecule(d, chemviewer_id=viewer_id)
+render_dict_molecule(d, chemviewer_id=viewer_id)
 
 # change view
-set_camera_position(&quot;x&quot;, &quot;-&quot;)
-set_options(Dict(&quot;drawingType&quot; =&gt; &quot;wireframe&quot;))
-set_camera_position(&quot;c&quot;, &quot;+&quot;)
-set_options(Dict(&quot;drawingType&quot; =&gt; &quot;ball and stick&quot;))
+set_camera_position!(&quot;x&quot;, &quot;-&quot;)
+set_options!(Dict(&quot;drawingType&quot; =&gt; &quot;wireframe&quot;))
+set_camera_position!(&quot;c&quot;, &quot;+&quot;)
+set_options!(Dict(&quot;drawingType&quot; =&gt; &quot;ball and stick&quot;))
 
 # save image
-save_image(&quot;test.png&quot;)</code></pre><p>Use mouse to rotate, zoom and pan. Keyboard shortcuts <code>x</code>, <code>y</code>, <code>z</code> set the view along the x, y and z axis. Analogously, <code>a</code>, <code>b</code>, <code>c</code> set the view alonmg the unit cell vectors. Uppercase letters (<code>X</code>, <code>Y</code>, <code>Z</code>, <code>A</code>, <code>B</code>, <code>C</code>) set the opposite view direction.</p><p>A more detailed description can be found in the <a href="reference/#Reference">Reference</a></p></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.6 on <span class="colophon-date" title="Wednesday 22 September 2021 16:34">Wednesday 22 September 2021</span>. Using Julia version 1.6.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+save_image(&quot;test.png&quot;)</code></pre><p>Use mouse to rotate, zoom and pan. Keyboard shortcuts <code>x</code>, <code>y</code>, <code>z</code> set the view along the x, y and z axis. Analogously, <code>a</code>, <code>b</code>, <code>c</code> set the view alonmg the unit cell vectors. Uppercase letters (<code>X</code>, <code>Y</code>, <code>Z</code>, <code>A</code>, <code>B</code>, <code>C</code>) set the opposite view direction.</p><p>A more detailed description can be found in the <a href="reference/#Reference">Reference</a></p></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.7 on <span class="colophon-date" title="Wednesday 29 September 2021 13:15">Wednesday 29 September 2021</span>. Using Julia version 1.6.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
