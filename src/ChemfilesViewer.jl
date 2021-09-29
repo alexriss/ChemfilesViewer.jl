@@ -335,7 +335,7 @@ end
 Call [`render_molecule`](@ref) for the last used output plot.
 """
 function render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
-    return render_molecule(molecule, chemviewer_id=chemviewer_id, options=options, output=output)
+    return render_molecule(molecule, chemviewer_id=current_chemviewer_id, options=options, output=output)
 end
 
 
@@ -405,7 +405,7 @@ If the `chemviewer_id` is not specified, the most recent instance is used.
 function save_image(filename::AbstractString; chemviewer_id::String="")
     window_obs, chemviewer_id = get_reference(chemviewer_id)
     if typeof(window_obs) == Blink.Window
-        img_base64 = @js window getPngString($chemviewer_id)
+        img_base64 = @js window_obs getPngString($chemviewer_id)
     elseif typeof(window_obs) == BiObservable
         job_id = string(UUIDs.uuid4())
         global jobs[job_id] = Job(false, Dict("command" => "getPngString", "filename" => filename))

@@ -19,7 +19,7 @@ using Test
     d["atoms"][1]["color"] = "#f00000"
     d["atoms"][1]["label"] = "Important atom"
     d["atoms"][1]["radius"] = 1.0
-    viewer_id = render_dict_molecule(d, chemviewer_id=viewer_id)
+    render_dict_molecule(d, chemviewer_id=viewer_id)
     
     # change view
     set_camera_position!("x", "-")
@@ -33,7 +33,7 @@ using Test
     end
     save_image("test.png")
 
-    close(ChemfilesViewer.get_window_chemviewer_id(viewer_id)[1])
+    close(ChemfilesViewer.get_reference(viewer_id)[1])
     
     @test filesize("test.png") > 100000
 end
