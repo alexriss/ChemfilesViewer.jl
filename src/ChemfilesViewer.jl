@@ -299,7 +299,7 @@ end
 
 
 """
-    function handle_job(value::Arra{Any,Any})
+    function handle_job(value::Vector{Any})
 
 Handles responses from javascript jobs.
 """
@@ -316,7 +316,7 @@ end
 
 
 """
-    function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}())
+    function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
 
 Render the `molecule` (a Chemfiles frame). If `chemviewer_id` is not given, a new electron window will be created.
 Additional `options` for rendering can be provided.
@@ -330,7 +330,7 @@ function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", op
 end
 
 """
-    render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+    function render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
 
 Call [`render_molecule`](@ref) for the last used output plot.
 """
@@ -340,7 +340,7 @@ end
 
 
 """
-    function set_camera_position(axis::String="z", direction::String="+"; chemviewer_id::String="")
+    function set_camera_position!(axis::String="z", direction::String="+"; chemviewer_id::String="")
 
 Set the camera position to be along one of the axis `x`, `y`, `z` or the unit cell vectors `a`, `b`, `c`.
 The direction of `+` or `-` specifies in which direction the camera is moved.
@@ -358,7 +358,7 @@ end
 
 
 """
-    function set_options(options::AbstractDict{String,<:Any}; chemviewer_id::String="")
+    function set_options!(options::AbstractDict{String,<:Any}; chemviewer_id::String="")
 
 Set options for the render. Available options are: 
 
