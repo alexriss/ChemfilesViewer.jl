@@ -373,7 +373,7 @@ Set options for the render. Available options are:
 - `cameraZoom`: camera zoom, default is `1`  
 - `cameraAxis`: set the camera view along this axis (`x`, `y`, `z` *(default)* or the unit cell vectors `a`, `b`, `c`), see also [`set_camera_position!`](@ref)  
 - `cameraAxisDirection`: direction of the camera along `cameraAxis`: `+` *(default)*, `-`  
-- `hemisphereLightIntensity`: light intensity of hemiphere light, defaults to `0.8`  
+- `hemisphereLightIntensity`: light intensity of hemiphere light, defaults to `1.0`  
 - `directionalLightIntensity`: light intensity of directional light, defaults to `0.05`  
 - `center`: center of the render, will be automatically calculated if not given  
 - `rotateSpeed`: speed of rotation via mouse control, defaults to `2`  

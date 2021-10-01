@@ -35,7 +35,7 @@ ChemViewer.prototype.create = function (selector, id, options) {
         "cameraZoom": 1,
         "cameraAxis": "z",
         "cameraAxisDirection": "+",
-        "hemisphereLightIntensity": 0.8,
+        "hemisphereLightIntensity": 1.0,
         "directionalLightIntensity": 0.05,
         "center": [],
         "rotateSpeed": 2,
@@ -88,9 +88,10 @@ ChemViewer.prototype.create = function (selector, id, options) {
         s.clientWidth / 32, s.clientHeight / 32, -s.clientHeight / 32, -100, 1000);
     this.orthographic.z = 10;
 
-    this.light = new HemisphereLight(0xffffff, this.hemisphereLightIntensity);
+    this.light = new HemisphereLight(0xffffff, 0x505050, this.hemisphereLightIntensity);
     this.directionalLight = new DirectionalLight(0xffffff, this.directionalLightIntensity);
-    this.directionalLight.position.set(1, 1, 1);
+    this.directionalLight.position.set(0, 0, 1);
+    this.directionalLight.target.position.set(0,0,0);
 
     this,this.makeGeometries();
     this.atoms = [];
@@ -101,6 +102,7 @@ ChemViewer.prototype.create = function (selector, id, options) {
     this.scene = new Scene();
     this.scene.add(this.perspective);
     this.scene.add(this.orthographic);
+    this.scene.add(this.directionalLight.target);  // we need this in the scene so that the tartget gets updated oin camera movement
 
     this.updateCamera = (this.cameraType === 'orthographic');  // everything is sitll created in perspective-type and afterwards updated
     this.setCameraType('perspective');
@@ -745,7 +747,6 @@ ChemViewer.prototype.positionCamera = function (axis="z", direction="+", positio
     this.controls.target.set( ...this.center ); // pivot point
 
     if (positionDirectionalLight) {
-        this.directionalLight.target.position.set( ...this.center );
         this.directionalLight.position.copy(this.camera.position);
     }
 }
