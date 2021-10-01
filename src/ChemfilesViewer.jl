@@ -225,7 +225,7 @@ function render_dict_molecule_external(dict_molecule::AbstractDict{String,<:Any}
         if chemviewer_setup_needed
             @js window setupChemViewer($options)
         else
-            set_options(options, chemviewer_id=chemviewer_id)
+            set_options!(options, chemviewer_id=chemviewer_id)
         end
         json_molecule = JSON.json(dict_molecule)
         @js window drawJsonString($chemviewer_id, $json_molecule)
