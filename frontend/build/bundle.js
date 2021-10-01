@@ -43064,7 +43064,11 @@
 	            this.camera.updateProjectionMatrix();
 	        }
 	        if (options.hasOwnProperty("cameraAxis")) {
-	            this.positionCamera(options.cameraAxis, options.cameraAxisDirection);
+	            this.cameraAxis = options.cameraAxis;
+	            if (options.hasOwnProperty("cameraAxisDirection")) {
+	                this.cameraAxisDirection = options.cameraAxisDirection;
+	            }
+	            this.positionCamera(this.cameraAxis, this.cameraAxisDirection);
 	        }
 	        if (this.hemisphereLightIntensity != options.hemisphereLightIntensity) {
 	            this.hemisphereLightIntensity = options.hemisphereLightIntensity;
