@@ -42897,6 +42897,7 @@
 	        "quality": "high",
 	        "showUnitCell": true,
 	        "showLabels": false,
+	        "styles": {},
 	        "cameraFov": 40,
 	        "cameraDistance": 0,
 	        "cameraZoom": 1,
@@ -42917,6 +42918,8 @@
 	    this.id = id;
 
 	    this.setOptions(options, true);
+	    this.data = JSON.parse(JSON.stringify(this.defaultStyles));  // deep copy
+	    this.setStyles(this.styles);
 
 	    this.saveImage = false;
 	    this.saveImageDownload = true;
@@ -43003,7 +43006,7 @@
 
 	// initializes or updates options
 	ChemViewer.prototype.setOptions = function (options, initialize=false) {
-	    var self = this;
+	    var self = this, redraw = false;
 	    options = options || {};
 
 	    if (initialize) {
@@ -43082,11 +43085,18 @@
 	            this.rotateSpeed = options.rotateSpeed;
 	            this.controls.rotateSpeed = this.rotateSpeed;
 	        }
+	        if (Object.keys(options.styles).length > 0) {  // we don't check, we will always redraw if this is given
+	            this.setStyles(options.styles);
+	            redraw = true;
+	        }
 	        if (this.quality != options.quality) {
 	            this.quality = options.quality;
 	            this.makeGeometries();
-	            this.setShader(this.shader);  // redraw
+	            redraw = true;
 	        }    
+	        if (redraw) {
+	            this.setShader(this.shader);  // redraw
+	        }
 	    }
 	};
 
@@ -43715,7 +43725,21 @@
 	    this.render();
 	};
 
-	ChemViewer.prototype.data = {
+	// overwrites given styles
+	ChemViewer.prototype.setStyles = function (styles) {
+	    var self = this;
+	    Object.entries(styles).forEach(([el, elStyle]) => {
+	        if (self.data.hasOwnProperty(el)) {
+	            Object.entries(elStyle).forEach(([key, val]) => {
+	                this.data[el][key] = val;
+	            });
+	        } else {
+	            this.data[el] = elStyle;
+	        }
+	    });
+	};
+
+	ChemViewer.prototype.defaultStyles = {
 	    Ac: { color: 0x70aaf9, radius: 1.95 },
 	    Ag: { color: 0xbfbfbf, radius: 1.6 },
 	    Al: { color: 0xbfa5a5, radius: 1.25 },

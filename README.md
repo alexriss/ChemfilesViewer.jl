@@ -44,6 +44,13 @@ set_options!(Dict("drawingType" => "wireframe"))
 set_camera_position!("c", "+")
 set_options!(Dict("drawingType" => "ball and stick"))
 
+# change style
+set_options!(Dict("styles" => Dict(
+    "H" => Dict("color" => "#c0c0c0", "radius" => 0.4),
+    "N" => Dict("color" => "#241571"),
+    "bond" => Dict("color" => "#ffffff", "radius" => 0.3)
+)))
+
 # save image
 save_image("test.png")
 ```

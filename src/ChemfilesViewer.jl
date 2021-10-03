@@ -368,6 +368,7 @@ Set options for the render. Available options are:
 - `quality`: `high` *(default)*, `low`  
 - `showUnitCell`: `true` *(default)*, `false`  
 - `showLabels`: `true`, `false` *(default)*  
+- `styles`: dictionary of element styles, e.g. `Dict("Au" => Dict("color" => "#f0f0c0", "radius" => 2.6))`
 - `cameraFov`: field of view of the perspective camera, default is `40`  
 - `cameraDistance`: distance of the perspective camera, will be automatic
 - `cameraZoom`: camera zoom, default is `1`  
