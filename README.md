@@ -4,7 +4,6 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://alexriss.github.io/ChemfilesViewer.jl/dev)
 [![Build Status](https://github.com/alexriss/ChemfilesViewer.jl/workflows/CI/badge.svg)](https://github.com/alexriss/ChemfilesViewer.jl/actions)
 
-
 A julia library to visualize chemical molecules and other structures in the [Chemfiles](https://github.com/chemfiles/Chemfiles.jl) format.
 
 The structures can be rendered in [Jupyter](https://jupyter.org/) or in an external window (via [Blink](https://github.com/JuliaGizmos/Blink.jl)). [Pluto](https://github.com/fonsp/Pluto.jl) should work if [WebIO support](https://github.com/fonsp/Pluto.jl/pull/991) is implemented.

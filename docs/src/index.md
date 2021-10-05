@@ -10,10 +10,9 @@ Documentation for [ChemfilesViewer](https://github.com/alexriss/ChemfilesViewer.
 
 A julia library to visualize chemical molecules and other structures in the [Chemfiles](https://github.com/chemfiles/Chemfiles.jl) format.
 
-
 ## Usage
 
-```
+```julia
 using ChemfilesViewer
 
 # read molecule using Chemfiles

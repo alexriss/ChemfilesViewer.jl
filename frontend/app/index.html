@@ -198,6 +198,16 @@
                         ]
                     );
                 });
+            } else if (what == "getPngStringLabels") {
+                getPngStringLabels(chemviewer_id).then(pngStr => {
+                    window.chemviewer_objects["_webIOScope_" + chemviewer_id].setObservableValue("from_js",
+                        [
+                            chemviewer_id,
+                            "returnPngStringLabels",
+                            {"val": pngStr, "jobID": val["jobID"]}
+                        ]
+                    );
+                });
             }
         }
 
@@ -255,6 +265,17 @@
                 }
             }
             return window.chemviewer_objects[id].save();
+        }
+
+        async function getPngStringLabels(id) {
+            for (let i=0;i<50;i++) {
+                if (!window.chemviewer_objects.hasOwnProperty(id)) {
+                    await sleep(100);
+                } else {
+                    break;
+                }
+            }
+            return window.chemviewer_objects[id].saveLabels();
         }
 
     </script>

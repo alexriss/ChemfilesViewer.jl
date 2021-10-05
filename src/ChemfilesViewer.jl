@@ -4,13 +4,15 @@ using Base64
 using Chemfiles
 using Blink
 using JSON
+using Images
 using UUIDs
 using WebIO
 
 export generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
     render_molecule, render_molecule!, set_camera_position!, set_options!,
     clear_labels!, add_label!,
-    save_image, get_current_chemviewer_id
+    save_image, save_image_labels, save_overlay,
+    get_current_chemviewer_id
 
 
 # javascript jobs
@@ -311,7 +313,7 @@ Handles responses from javascript jobs.
 function handle_job(value::Vector{Any})
     global jobs
     job_id = value[3]["jobID"]
-    if value[2] == "returnPngString"
+    if value[2] == "returnPngString" || value[2] == "returnPngStringLabels"
         write_image(jobs[job_id].parameters["filename"], value[3]["val"])
         
         jobs[job_id].finished = true  # this is not really necessary, but can be used in the future to give an ok to the user
@@ -463,7 +465,7 @@ end
 Save a png image of the render to `filename`. The image size is specified by the parameters `renderWidth` and `renderHeight`,
 which can be set by [`set_options!`](@ref).
 
-Note that currently labels are not saved in the rendered image.
+Note that labels are not saved. To save the labels use [`save_image_labels`](@ref).
 
 If the `chemviewer_id` is not specified, the most recent instance is used. 
 """
@@ -482,6 +484,64 @@ function save_image(filename::AbstractString; chemviewer_id::String="")
     end
 
     return
+end
+
+
+"""
+    function save_image_labels(filename::AbstractString; chemviewer_id::String="")
+
+Save a png image of the labels in the render to `filename`. The image size is specified by the parameters `renderWidth` and `renderHeight`,
+which can be set by [`set_options!`](@ref).
+
+Note that this is an experimental feature. The resulting image might deviate from what is rendered in the output.
+
+If the `chemviewer_id` is not specified, the most recent instance is used. 
+"""
+function save_image_labels(filename::AbstractString; chemviewer_id::String="")
+    window_obs, chemviewer_id = get_reference(chemviewer_id)
+    if typeof(window_obs) == Blink.Window
+        img_base64 = @js window_obs getPngStringLabels($chemviewer_id)
+        write_image(filename, img_base64)
+    elseif typeof(window_obs) == BiObservable
+        job_id = string(UUIDs.uuid4())
+        global jobs[job_id] = Job(false, Dict("command" => "getPngStringLabels", "filename" => filename))
+        window_obs.julia[] = [chemviewer_id, "getPngStringLabels", Dict("jobID" => job_id)]
+        # image will be saved in the `handle_job` function
+    else
+        @error """Cannot find existing render output. Call "render_molecule" first."""
+    end
+
+    return
+end
+
+
+"""
+    function save_overlay(filename::AbstractString, filename_input1::AbstractString, filename_input2::AbstractString)
+
+Saves an image to `filename` that is constructed from overlaying `filename_input2` over `filename_input1`.
+"""
+function save_overlay(filename::AbstractString, filename_input1::AbstractString, filename_input2::AbstractString)
+    img1 = load(filename_input1)
+    img2 = load(filename_input2)
+    if size(img1) != size(img2)
+        @info "Input files have different sizes ($(size(img1)) and $(size(img2))). Resizing the second image to fit the first."
+        img2 = imresize(img2, size(img1))
+    end
+    res = zero(img1)
+    for i in eachindex(res)
+        p1 = img1[i]
+        p2 = img2[i]
+        # see https://en.wikipedia.org/wiki/Alpha_compositing
+        alphao = p2.alpha + p1.alpha * (1 - p2.alpha)
+        if alphao == 0
+            co = p1
+        else
+            co = (p2 * p2.alpha + p1 * p1.alpha * (1 - p2.alpha)) / alphao
+        end
+        res[i] = RGBA(co.r, co.g, co.b, alphao)
+    end
+    save(filename, res)
+    return nothing
 end
 
 

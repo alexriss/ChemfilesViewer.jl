@@ -11,9 +11,11 @@
   "author": "Alex Riss",
   "license": "GPL-3.0",
   "dependencies": {
+    "dom-to-image": "^2.6.0",
     "three": "^0.131.3"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^21.0.0",
     "@rollup/plugin-node-resolve": "^13.0.4",
     "rollup": "^2.56.0",
     "rollup-plugin-terser": "^7.0.2",

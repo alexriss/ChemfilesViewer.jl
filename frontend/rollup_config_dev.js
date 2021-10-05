@@ -1,4 +1,5 @@
 import resolve from '@rollup/plugin-node-resolve'; // locate and bundle dependencies in node_modules (mandatory)
+import commonjs from '@rollup/plugin-commonjs';
 
 export default {
 	input: 'src/viewer.js',
@@ -9,5 +10,5 @@ export default {
 			file: 'build/bundle.js'
 		}
 	],
-	plugins: [ resolve() ]
+	plugins: [ resolve(), commonjs() ]
 };

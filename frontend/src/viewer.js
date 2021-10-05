@@ -14,7 +14,9 @@ import {
     Vector3, Matrix4, Euler,
 } from 'three';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+// import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { CSS3DRenderer, CSS3DSprite } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
+import domtoimage from 'dom-to-image';
 
 function ChemViewer() {
     //
@@ -55,8 +57,10 @@ ChemViewer.prototype.create = function (selector, id, options) {
     this.setStyles(this.styles);
 
     this.saveImage = false;
-    this.saveImageDownload = true;
     this.linkSave = document.createElement('a');
+    this.linkSaveLabels = document.createElement('a');
+    this.saving = false;
+    this.prepareSaveParams = {};
 
     hasWebgl = (function () {
         try {
@@ -72,7 +76,7 @@ ChemViewer.prototype.create = function (selector, id, options) {
         this.renderer = new WebGLRenderer({ antialias: true, alpha: true });
     } else {
         s.innerHTML = s.innerHTML + '<p class="alert alert-danger" align="center">Your web browser ' +
-            'does not support either WebGL or Canvas. Please upgrade.</p>';
+            'does not seem to support WebGL. Please upgrade.</p>';
         return;
     }
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -80,7 +84,7 @@ ChemViewer.prototype.create = function (selector, id, options) {
     s.appendChild(this.renderer.domElement);
 
     // for labels
-    this.labelRenderer = new CSS2DRenderer();
+    this.labelRenderer = new CSS3DRenderer();
     this.labelRenderer.setSize(s.clientWidth, s.clientHeight);
     this.labelRenderer.domElement.style.position = 'absolute';
     this.labelRenderer.domElement.style.top = '0px';
@@ -218,6 +222,12 @@ ChemViewer.prototype.setOptions = function (options, initialize=false) {
         if (this.rotateSpeed != options.rotateSpeed) {
             this.rotateSpeed = options.rotateSpeed;
             this.controls.rotateSpeed = this.rotateSpeed;
+        }
+        if (this.renderWidth != options.renderWidth) {
+            this.renderWidth = options.renderWidth;
+        }
+        if (this.renderHeight != options.renderHeight) {
+            this.renderHeight = options.renderHeight;
         }
         if (Object.keys(options.styles).length > 0) {  // we don't check, we will always redraw if this is given
             this.setStyles(options.styles);
@@ -405,8 +415,9 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
             if (!self.showLabels) {
                 labelDiv.classList.add("hidden");
             }
-            let atomLabel = new CSS2DObject( labelDiv );
+            let atomLabel = new CSS3DSprite( labelDiv );
             atomLabel.position.set( 0, 0, 0 );
+            atomLabel.scale.set(0.03,0.03,0.03);
             mesh.add( atomLabel );
         }
 
@@ -590,7 +601,8 @@ ChemViewer.prototype.addStandaloneLabel = function (label) {
     if (!label.hasOwnProperty("location")) {
         label.location = [0,0,0];
     }
-    let standaloneLabel = new CSS2DObject( labelDiv );
+    let standaloneLabel = new CSS3DSprite( labelDiv );
+    standaloneLabel.scale.set(0.03,0.03,0.03);
     standaloneLabel.position.fromArray(label.location);
     this.scene.add( standaloneLabel );
     this.standaloneLabels.push(standaloneLabel);
@@ -642,9 +654,8 @@ ChemViewer.prototype.drawJsonFile = function (jsonFile) {
 }
 
 
-// Request to save a screenshot of the current canvas.
+// Request to save a screenshot of the current canvas
 ChemViewer.prototype.save = async function (downloadImage = false) {
-    this.saveImageDownload = downloadImage;
     this.saveImage = true;
     this.linkSave.href = "";
 
@@ -659,7 +670,33 @@ ChemViewer.prototype.save = async function (downloadImage = false) {
             break;
         }
     }
-    return this.linkSave.href
+    if (downloadImage) {
+        this.linkSave.click();
+    }
+    return this.linkSave.href;
+}
+
+// Request to save a screenshot of the labels rendering
+ChemViewer.prototype.saveLabels = async function (downloadImage = false) {
+    this.saveImageLabelsDownload = this.saveImageLabels = true;
+    this.saveImageLabels = true;
+    this.linkSaveLabels.href = "";
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    for (let i = 0; i < 50; i++) {
+        if (this.saveImageLabels === true) {  // will be set to false after saving the image
+            await sleep(50);
+        } else {
+            break;
+        }
+    }
+    if (downloadImage) {
+        this.linkSaveLabels.click();
+    }
+    return this.linkSaveLabels.href;
 }
 
 // Sets molecule drawing types ( ball and stick, space filling, wireframe )
@@ -819,66 +856,89 @@ ChemViewer.prototype.setShader = function (shader) {
     this.draw(this.current, false);
 }
 
+// prepares for saving
+ChemViewer.prototype.prepareSave = function () {
+    var frustumWidth, frustumHeight, frustumAspect, aspect;
+
+    this.saving = true;
+
+    this.prepareSaveParams.w = this.s.clientWidth;
+    this.prepareSaveParams.h = this.s.clientHeight;
+    this.prepareSaveParams.pixelRatio = this.renderer.getPixelRatio();
+    this.prepareSaveParams.frustum = [this.orthographic.left, this.orthographic.right, this.orthographic.top, this.orthographic.bottom];
+    this.prepareSaveParams.aspect = this.perspective.aspect;
+
+    if (this.cameraType == "orthographic") {
+        aspect = this.renderWidth / this.renderHeight;
+        frustumWidth = this.camera.right - this.camera.left;
+        frustumHeight = this.camera.top - this.camera.bottom;
+        frustumAspect = frustumWidth / frustumHeight;
+        if (aspect < frustumAspect) {
+            this.camera.top = frustumWidth / aspect / 2;
+            this.camera.bottom = -frustumWidth / aspect / 2 ;
+        } else {
+            this.camera.left = -frustumHeight * aspect / 2;
+            this.camera.right = frustumHeight * aspect / 2;
+        }
+    } else {
+        this.camera.aspect = this.renderWidth / this.renderHeight;
+    }
+    this.renderer.setPixelRatio(1);
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(this.renderWidth, this.renderHeight);
+    this.labelRenderer.setSize(this.renderWidth, this.renderHeight);
+    this.render();
+}
+
+//  resets parameters after saviong
+ChemViewer.prototype.afterSave = function () {
+    this.renderer.setPixelRatio(this.prepareSaveParams.pixelRatio);
+    this.renderer.setSize(this.prepareSaveParams.w, this.prepareSaveParams.h);
+    this.labelRenderer.setSize(this.prepareSaveParams.w, this.prepareSaveParams.h);
+
+    this.orthographic.left = this.prepareSaveParams.frustum[0];
+    this.orthographic.right = this.prepareSaveParams.frustum[1];
+    this.orthographic.top = this.prepareSaveParams.frustum[2];
+    this.orthographic.bottom = this.prepareSaveParams.frustum[3];
+    this.perspective.aspect = this.prepareSaveParams.aspect;
+    this.camera.updateProjectionMatrix();
+    this.saving = false;
+}
+
 // Runs the main window animation in an infinite loop
 ChemViewer.prototype.animate = function () {
-    var self = this, w, h, aspect, pixelRatio,
-        frustum, frustumWidth, frustumHeight, frustumAspect;
+    var self = this, options, pngBase64;
     window.requestAnimationFrame(function () {
         return self.animate();
     });
-    if (this.saveImage) {
-        w = this.s.clientWidth; h = this.s.clientHeight;
-        pixelRatio = this.renderer.getPixelRatio();
-        if (this.cameraType == "orthographic") {
-            frustum = [this.camera.left, this.camera.right, this.camera.top, this.camera.bottom];
+    if (this.saving) {
+        return;
+    } else if (this.saveImage) {
+        this.prepareSave();
 
-            aspect = this.renderWidth / this.renderHeight;
-            frustumWidth = this.camera.right - this.camera.left;
-            frustumHeight = this.camera.top - this.camera.bottom;
-            frustumAspect = frustumWidth / frustumHeight;
-            if (aspect < frustumAspect) {
-                this.camera.top = frustumWidth / aspect / 2;
-                this.camera.bottom = -frustumWidth / aspect / 2 ;
-            } else {
-                this.camera.left = -frustumHeight * aspect / 2;
-                this.camera.right = frustumHeight * aspect / 2;
-            }
-        } else {
-            aspect = this.camera.aspect;
-            this.camera.aspect = this.renderWidth / this.renderHeight;
-        }
-        this.renderer.setPixelRatio(1);
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.renderWidth, this.renderHeight);
-        this.labelRenderer.setSize(this.renderWidth, this.renderHeight);
-        this.render();
-
-        var pngBase64 = this.renderer.domElement.toDataURL('image/png');
+        pngBase64 = this.renderer.domElement.toDataURL('image/png');
         this.linkSave.download = 'chemviewer.png';
         this.linkSave.href = pngBase64;
 
-        this.renderer.setPixelRatio(pixelRatio);
-        this.renderer.setSize(w, h);
-        this.labelRenderer.setSize(w, h);
-
-        if (this.cameraType == "orthographic") {
-            this.camera.left = frustum[0];
-            this.camera.right = frustum[1];
-            this.camera.top = frustum[2];
-            this.camera.bottom = frustum[3];
-        } else {
-            this.camera.aspect = aspect;
-        }
-        this.camera.updateProjectionMatrix();
-
+        this.afterSave();
         this.saveImage = false;
-
-        if (this.saveImageDownload) {
-            this.linkSave.click();
+    } else if (this.saveImageLabels) {  // dom-to-image gives us a promise, so we have to do it this way (somewhat prone to race conditions, though)
+        this.prepareSave();
+        
+        options = {
+            width: this.renderWidth,
+            height: this.renderHeight
         }
+        domtoimage.toPng(this.labelRenderer.domElement, options).then(function (dataUrl) {
+            self.linkSaveLabels.download = 'chemviewer_labels.png';
+            self.linkSaveLabels.href = dataUrl;
+            self.afterSave();
+            self.saveImageLabels = false;
+        });
+    } else {
+        this.render();
+        this.controls.update();
     }
-    this.render();
-    this.controls.update();
 }
 
 ChemViewer.prototype.render = function () {
