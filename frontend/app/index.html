@@ -90,8 +90,12 @@
             position: relative;
         }
 
-        .chemviewer_render .chemviewer_label {
+        .chemviewer_render .chemviewer_atom_label {
             text-shadow: -1px 1px 1px rgba(0,0,0,1);
+            font-size: 1.2em;
+        }
+
+        .chemviewer_render .chemviewer_standalone_label {
             font-size: 1.2em;
         }
 
@@ -180,6 +184,10 @@
                 drawJsonString(chemviewer_id, val);
             } else if (what == "setOptions") {
                 setOptions(chemviewer_id, val);
+            } else if (what == "addLabel") {
+                addLabel(chemviewer_id, val);
+            } else if (what == "clearLabels") {
+                clearLabels(chemviewer_id);
             } else if (what == "getPngString") {
                 getPngString(chemviewer_id).then(pngStr => {
                     window.chemviewer_objects["_webIOScope_" + chemviewer_id].setObservableValue("from_js",
@@ -214,6 +222,28 @@
                 }
             }
             window.chemviewer_objects[id].setOptions(dict);
+        }
+
+        async function addLabel(id, dict) {
+            for (let i=0;i<50;i++) {
+                if (!window.chemviewer_objects.hasOwnProperty(id)) {
+                    await sleep(100);
+                } else {
+                    break;
+                }
+            }
+            window.chemviewer_objects[id].addStandaloneLabel(dict);
+        }
+
+        async function clearLabels(id) {
+            for (let i=0;i<50;i++) {
+                if (!window.chemviewer_objects.hasOwnProperty(id)) {
+                    await sleep(100);
+                } else {
+                    break;
+                }
+            }
+            window.chemviewer_objects[id].clearStandaloneLabels();
         }
 
         async function getPngString(id) {

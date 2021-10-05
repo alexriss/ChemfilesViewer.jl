@@ -100,6 +100,7 @@ ChemViewer.prototype.create = function (selector, id, options) {
     this.atoms = [];
     this.bonds = [];
     this.corners = undefined;
+    this.standaloneLabels = [];
 
     // Initializes a scene and appends objects to be drawn
     this.scene = new Scene();
@@ -398,6 +399,7 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         if (atom.hasOwnProperty('label')) {
             let labelDiv = document.createElement( 'div' );
             labelDiv.className = 'chemviewer_label';
+            labelDiv.classList.add('chemviewer_atom_label');
             labelDiv.textContent = atom.label;
             labelDiv.style.color = '#' + atomColor.toString(16);
             if (!self.showLabels) {
@@ -418,6 +420,13 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         for (let ii=0; ii<3; ii++) {
             maxXYZ[ii] = Math.max(maxXYZ[ii], atom.location[ii])
             minXYZ[ii] = Math.min(minXYZ[ii], atom.location[ii])
+        }
+    }
+
+    // labels
+    if (molecule.hasOwnProperty('labels')) {
+        for (const [i, label] of molecule.labels.entries()) {
+            self.addStandaloneLabel(label);
         }
     }
 
@@ -562,6 +571,40 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
     self.render();
 }
 
+
+// adds standalone label
+ChemViewer.prototype.addStandaloneLabel = function (label) {
+    let labelDiv = document.createElement( 'div' );
+    labelDiv.className = 'chemviewer_label';
+    labelDiv.classList.add('chemviewer_standalone_label');
+    labelDiv.textContent = label.label;
+    if (label.hasOwnProperty("style")) {
+        labelDiv.style.cssText = label.style;
+    }
+    if (label.hasOwnProperty("color")) {
+        labelDiv.style.color = label.color;
+    }
+    if (!this.showLabels) {
+        labelDiv.classList.add("hidden");
+    }
+    if (!label.hasOwnProperty("location")) {
+        label.location = [0,0,0];
+    }
+    let standaloneLabel = new CSS2DObject( labelDiv );
+    standaloneLabel.position.fromArray(label.location);
+    this.scene.add( standaloneLabel );
+    this.standaloneLabels.push(standaloneLabel);
+}
+
+// clears all standalone labels
+ChemViewer.prototype.clearStandaloneLabels = function () {
+    for (const [i, value] of this.standaloneLabels.entries()) {
+        this.scene.remove(value);
+    }
+    this.standaloneLabels = [];
+    this.s.querySelectorAll(".chemviewer_standalone_label").forEach(e => e.parentNode.removeChild(e));
+}
+
 // Deletes any existing molecules.
 ChemViewer.prototype.clear = function () {
     var self = this;
@@ -573,6 +616,8 @@ ChemViewer.prototype.clear = function () {
     if (this.corners != undefined) {
         this.scene.remove(this.corners);
     }
+
+    this.clearStandaloneLabels();
 
     // remove all labels
     this.s.querySelectorAll(".chemviewer_label").forEach(e => e.parentNode.removeChild(e));
@@ -776,12 +821,14 @@ ChemViewer.prototype.setShader = function (shader) {
 
 // Runs the main window animation in an infinite loop
 ChemViewer.prototype.animate = function () {
-    var self = this, w, h, aspect, frustum, frustumWidth, frustumHeight, frustumAspect;
+    var self = this, w, h, aspect, pixelRatio,
+        frustum, frustumWidth, frustumHeight, frustumAspect;
     window.requestAnimationFrame(function () {
         return self.animate();
     });
     if (this.saveImage) {
         w = this.s.clientWidth; h = this.s.clientHeight;
+        pixelRatio = this.renderer.getPixelRatio();
         if (this.cameraType == "orthographic") {
             frustum = [this.camera.left, this.camera.right, this.camera.top, this.camera.bottom];
 
@@ -800,15 +847,17 @@ ChemViewer.prototype.animate = function () {
             aspect = this.camera.aspect;
             this.camera.aspect = this.renderWidth / this.renderHeight;
         }
+        this.renderer.setPixelRatio(1);
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.renderWidth, this.renderHeight);
         this.labelRenderer.setSize(this.renderWidth, this.renderHeight);
         this.render();
 
-        var pngBase64 = this.renderer.domElement.toDataURL('image/png')
+        var pngBase64 = this.renderer.domElement.toDataURL('image/png');
         this.linkSave.download = 'chemviewer.png';
         this.linkSave.href = pngBase64;
 
+        this.renderer.setPixelRatio(pixelRatio);
         this.renderer.setSize(w, h);
         this.labelRenderer.setSize(w, h);
 

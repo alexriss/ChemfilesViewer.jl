@@ -36,6 +36,21 @@ d["atoms"][1]["label"] = "Important atom"
 d["atoms"][1]["radius"] = 1.0
 render_dict_molecule(d, chemviewer_id=viewer_id)
 
+# add labels
+d["labels"] = [
+    Dict(
+        "label" => "porphyrin",
+        "location" => [0,0,2],
+        "color" => "#600000"
+    ),
+    Dict(
+        "label" => "pyrrole",
+        "location" => [-0.6, 3.2, 0],
+        "style" => "font-size:80%;opacity:0.5;"
+    )
+]
+render_dict_molecule!(d, options=Dict("showLabels" => true))
+
 # change view
 set_camera_position!("x", "-")
 set_options!(Dict("drawingType" => "wireframe"))

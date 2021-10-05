@@ -8,8 +8,9 @@ using UUIDs
 using WebIO
 
 export generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
-    render_molecule, render_molecule!, set_camera_position!, set_options!, save_image,
-    get_current_chemviewer_id
+    render_molecule, render_molecule!, set_camera_position!, set_options!,
+    clear_labels!, add_label!,
+    save_image, get_current_chemviewer_id
 
 
 # javascript jobs
@@ -78,12 +79,13 @@ end
 
 
 """
-    generate_dict_molecule(molecule::Chemfiles.Frame)
+    function generate_dict_molecule(molecule::Chemfiles.Frame; atom_labels=false)
 
 Generate a dictionary for the `molecule` specifying the atoms, bonds and unit cell.
+If `atom_labels` is true, then labels will be generated for each atom.
 """
-function generate_dict_molecule(molecule::Chemfiles.Frame)
-    dict_molecule = Dict("atoms" => [], "bonds" => [], "unitcell" => [])
+function generate_dict_molecule(molecule::Chemfiles.Frame; atom_labels=false)
+    dict_molecule = Dict("atoms" => [], "bonds" => [], "unitcell" => [], "labels" => [])
     
     pos = positions(molecule)
     types = [type(a) for a in molecule]
@@ -91,9 +93,11 @@ function generate_dict_molecule(molecule::Chemfiles.Frame)
     for (i,t) in enumerate(types)
         d_atom = Dict(
             "element" => t,
-            "label" => "$(t)_$(i-1)",
             "location" => pos[:,i]
         )
+        if atom_labels
+            d_atom["label"] = "$(t)_$(i-1)"
+        end
         push!(dict_molecule["atoms"], d_atom)
     end
 
@@ -138,6 +142,7 @@ end
 
 Render the molecule from a dictionary containing the atoms, bonds and unit cell. If `chemviewer_id` is not given, a new electron window will be created.
 Additional `options` for rendering can be provided.
+
 The parameter `output` specfies whether to display the render in an external window (when set to `external`)
 or inline within Jupyter or Pluto (when set to `inline`).
 Leaving `output` empty will autodetect the output medium.
@@ -316,16 +321,19 @@ end
 
 
 """
-    function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
+    function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), atom_labels=false, output::String="")
 
 Render the `molecule` (a Chemfiles frame). If `chemviewer_id` is not given, a new electron window will be created.
 Additional `options` for rendering can be provided.
+
+If `atom_labels` is true, then labels will be generated for each atom.
+
 The parameter `output` specfies whether to display the render in an external window (when set to `external`)
 or inline within Jupyter or Pluto (when set to `inline`).
 Leaving `output` empty will autodetect the output medium.
 """
-function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
-    dict_molecule = generate_dict_molecule(molecule)
+function render_molecule(molecule::Chemfiles.Frame; chemviewer_id::String="", options::AbstractDict{String,<:Any}=Dict{String,Any}(), atom_labels=false, output::String="")
+    dict_molecule = generate_dict_molecule(molecule, atom_labels=atom_labels)
     return render_dict_molecule(dict_molecule, chemviewer_id=chemviewer_id, options=options, output=output)
 end
 
@@ -334,8 +342,8 @@ end
 
 Call [`render_molecule`](@ref) for the last used output plot.
 """
-function render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
-    return render_molecule(molecule, chemviewer_id=current_chemviewer_id, options=options, output=output)
+function render_molecule!(molecule::Chemfiles.Frame; options::AbstractDict{String,<:Any}=Dict{String,Any}(), atom_labels=false, output::String="")
+    return render_molecule(molecule, chemviewer_id=current_chemviewer_id, options=options, atom_labels=atom_labels, output=output)
 end
 
 
@@ -397,16 +405,73 @@ end
 
 
 """
+    function add_label!(label::AbstractDict{String,<:Any}; chemviewer_id::String="")
+
+Adds a labels. Examples:
+```
+add_label!(Dict(
+    "label" => "label text",
+    "location" => [0,0,2],
+    "color" => "#f00000"
+))
+
+add_label!(Dict(
+    "label" => "some other text",
+    "location" => [2,5,5],
+    "style" => "font-weight:bold;color:blue;"
+))
+```
+
+If the `chemviewer_id` is not specified, the most recent instance is used. 
+"""
+function add_label!(label::AbstractDict{String,<:Any}; chemviewer_id::String="")
+    window_obs, chemviewer_id = get_reference(chemviewer_id)
+    if typeof(window_obs) == Blink.Window
+        @js window_obs addLabel($chemviewer_id, $label)
+    elseif typeof(window_obs) == BiObservable
+        window_obs.julia[] = [chemviewer_id, "addLabel", label]
+    else
+        @error """Cannot find existing render. Call "render_molecule" first."""
+    end
+    return
+end
+
+
+"""
+    function clear_labels!(; chemviewer_id::String="")
+
+Removes all labels (except for the atom-labels) from the render.
+
+If the `chemviewer_id` is not specified, the most recent instance is used. 
+"""
+function clear_labels!(; chemviewer_id::String="")
+    window_obs, chemviewer_id = get_reference(chemviewer_id)
+    if typeof(window_obs) == Blink.Window
+        @js window_obs clearLabels($chemviewer_id)
+    elseif typeof(window_obs) == BiObservable
+        window_obs.julia[] = [chemviewer_id, "clearLabels", Dict()]
+    else
+        @error """Cannot find existing render. Call "render_molecule" first."""
+    end
+    return
+end
+
+
+"""
     function save_image(filename::AbstractString; chemviewer_id::String="")
 
 Save a png image of the render to `filename`. The image size is specified by the parameters `renderWidth` and `renderHeight`,
 which can be set by [`set_options!`](@ref).
+
+Note that currently labels are not saved in the rendered image.
+
 If the `chemviewer_id` is not specified, the most recent instance is used. 
 """
 function save_image(filename::AbstractString; chemviewer_id::String="")
     window_obs, chemviewer_id = get_reference(chemviewer_id)
     if typeof(window_obs) == Blink.Window
         img_base64 = @js window_obs getPngString($chemviewer_id)
+        write_image(filename, img_base64)
     elseif typeof(window_obs) == BiObservable
         job_id = string(UUIDs.uuid4())
         global jobs[job_id] = Job(false, Dict("command" => "getPngString", "filename" => filename))
@@ -415,8 +480,6 @@ function save_image(filename::AbstractString; chemviewer_id::String="")
     else
         @error """Cannot find existing render output. Call "render_molecule" first."""
     end
-
-    write_image(filename, img_base64)
 
     return
 end
