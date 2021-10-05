@@ -44147,7 +44147,7 @@
 	            }
 	            let atomLabel = new CSS3DSprite( labelDiv );
 	            atomLabel.position.set( 0, 0, 0 );
-	            atomLabel.scale.set( 1, 1, 1 );
+	            atomLabel.scale.set(0.03,0.03,0.03);
 	            mesh.add( atomLabel );
 	        }
 
