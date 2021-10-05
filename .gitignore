@@ -1,7 +1,7 @@
 /Manifest.toml
 /docs/build/
 /docs/Manifest.toml
-/test/*.png
+/test/test.png
 /todo.txt
 /frontend/node_modules
 /testing/
