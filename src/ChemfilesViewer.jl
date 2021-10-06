@@ -171,6 +171,7 @@ function render_dict_molecule(dict_molecule::AbstractDict{String,<:Any}; chemvie
     end
 end
 
+
 """
     render_dict_molecule!(dict_molecule::AbstractDict{String,<:Any}; options::AbstractDict{String,<:Any}=Dict{String,Any}(), output::String="")
 
@@ -319,6 +320,31 @@ function handle_job(value::Vector{Any})
         jobs[job_id].finished = true  # this is not really necessary, but can be used in the future to give an ok to the user
         delete!(jobs, job_id)
     end
+end
+
+
+"""
+    function wait_for_jobs()
+
+Waits until all javascript jobs are finished and then exists.
+If some jobs are open after roughly `max_time` seconds, the function will print a warning and exit.
+This is useful in scripts, so that we know that javascript has returned a value and we can continue.
+"""
+function wait_for_jobs(max_time::Real=5.)
+    elapsed_time = 0  # this will not be measured exactly
+    while length(jobs) > 0
+        if elapsed_time > max_time
+            break
+        end
+        yield()
+        sleep(0.01)
+        elapsed_time += 0.01
+    end
+    if length(jobs) == 0
+        return nothing
+    end
+    @warn """Some jobs are still running."""
+    return nothing
 end
 
 

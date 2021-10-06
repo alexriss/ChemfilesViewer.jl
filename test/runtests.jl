@@ -3,6 +3,9 @@ using Chemfiles
 using Images
 using Test
 
+"""
+A crude way to estimate that two images are rather similar.
+"""
 function image_diff(fname1, fname2)
     img1 = load(fname1)
     img2 = load(fname2)
@@ -65,7 +68,11 @@ end
     sleep(1)
     save_image("test.png")
     @test image_diff("test.png", "test_4.png")
-    
+    save_image_labels("test.png")
+    @test image_diff("test.png", "test_4_labels.png")
+    save_overlay("test.png", "test_4.png", "test_4_labels.png")
+    @test image_diff("test.png", "test_4_both.png")
+
     # change view
     set_camera_position!("x", "-")
     set_options!(Dict("drawingType" => "wireframe"))
@@ -88,9 +95,26 @@ end
     sleep(1)
     save_image("test.png")
     @test image_diff("test.png", "test_7.png")
-
+    save_image_labels("test.png")
+    @test image_diff("test.png", "test_7_labels.png")
     
-    # save image
+    # add label
+    add_label!(Dict(
+        "label" => "some other text",
+        "location" => [2,5,5],
+        "style" => "font-weight:bold;color:blue;font-size:3em;"
+    ))
+    sleep(1)
+    save_image_labels("test.png")
+    @test image_diff("test.png", "test_8_labels.png")
+
+    # clear labels
+    clear_labels!()
+    sleep(1)
+    save_image_labels("test.png")
+    @test image_diff("test.png", "test_9_labels.png")
+
+    # save image again
     if isfile("test.png")
         rm("test.png")
     end

@@ -63,8 +63,22 @@ set_options!(Dict("styles" => Dict(
     "bond" => Dict("color" => "#ffffff", "radius" => 0.3)
 )))
 
+# clar labels (atom-labels are kept, though)
+clear_labels!()
+
+# add label
+add_label!(Dict(
+    "label" => "some other text",
+    "location" => [2,5,5],
+    "style" => "font-weight:bold;color:blue;font-size:3em;"
+))
+
 # save image
 save_image("test.png")
+# save labels (this is somewhat experimental)
+save_image_labels("test_labels.png")
+# save the overlay of the render and the labels
+save_overlay("test.png", "test_labels.png", "test_both.png")
 ```
 
 Use mouse to rotate, zoom and pan. Keyboard shortcuts `x`, `y`, `z` set the view along the x, y and z axis.

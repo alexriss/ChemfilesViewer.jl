@@ -152,9 +152,9 @@ ChemViewer.prototype.setOptions = function (options, initialize=false) {
             self[key] = options.hasOwnProperty(key) ? options[key] : defaultValue;
         });
     } else {
-        if (Object.keys(options).length == 0) {  // set defaults for all options
+        if (Object.keys(options).length == 0) {  // set current values for all options
             Object.entries(this.optionDefaults).forEach(([key, defaultValue]) => {
-                options[key] = defaultValue;
+                options[key] = self[key];
             });
         } else {
             Object.entries(this.optionDefaults).forEach(([key, defaultValue]) => {
