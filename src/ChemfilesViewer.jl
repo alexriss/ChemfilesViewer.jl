@@ -18,7 +18,9 @@ export generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
 # javascript jobs
 mutable struct Job
     finished::Bool
+    condition::Condition
     parameters::Dict{String,Any}
+    Job(parameters) = new(false, Condition(), parameters)
 end
 
 # Observables for bidirectional communication
@@ -27,7 +29,7 @@ mutable struct BiObservable
     js::Observable
 end
 
-
+MAX_TIME_JOB = 5  # maximum execution time of a job
 DEBUG = false
 
 current_chemviewer_id = ""  # holds the last used chemviewer_id
@@ -284,7 +286,7 @@ function render_dict_molecule_inline(dict_molecule::AbstractDict{String,<:Any}; 
 
         # julia handler reacts to changes sent from javascript
         on(obs_js) do value
-            handle_job(value)
+            @async handle_job(value)
         end
 
         # make the ChemViewer class and the _webIOScope accessible within the js functions
@@ -307,6 +309,25 @@ end
 
 
 """
+    function queue_job(observable, parameters)
+
+Queues a job to be handled by javascript.
+"""
+function queue_job(chemviewer_id::String, observable::Observable, parameters::Dict{String,<:Any}, wait_until_finished::Bool=false)
+    job_id = string(UUIDs.uuid4())
+    global jobs[job_id] = Job(parameters)
+    observable[] = [chemviewer_id, parameters["command"], Dict("jobID" => job_id)]
+    @async job_timeout(job_id)
+    
+    # todo: this does not yet seem to work properly
+    if wait_until_finished
+        wait(jobs[job_id].condition)
+    end
+    return
+end
+
+
+"""
     function handle_job(value::Vector{Any})
 
 Handles responses from javascript jobs.
@@ -314,37 +335,32 @@ Handles responses from javascript jobs.
 function handle_job(value::Vector{Any})
     global jobs
     job_id = value[3]["jobID"]
+    if !haskey(jobs, job_id) || jobs[job_id].finished
+        @warn """Job $(jobs[job_id].parameters["command"]) finished too late."""
+        return
+    end
     if value[2] == "returnPngString" || value[2] == "returnPngStringLabels"
         write_image(jobs[job_id].parameters["filename"], value[3]["val"])
         
+        notify(jobs[job_id].condition)
         jobs[job_id].finished = true  # this is not really necessary, but can be used in the future to give an ok to the user
         delete!(jobs, job_id)
     end
+    return
 end
 
 
 """
-    function wait_for_jobs()
+    function job_timeout()
 
-Waits until all javascript jobs are finished and then exists.
-If some jobs are open after roughly `max_time` seconds, the function will print a warning and exit.
-This is useful in scripts, so that we know that javascript has returned a value and we can continue.
 """
-function wait_for_jobs(max_time::Real=5.)
-    elapsed_time = 0  # this will not be measured exactly
-    while length(jobs) > 0
-        if elapsed_time > max_time
-            break
-        end
-        yield()
-        sleep(0.01)
-        elapsed_time += 0.01
+function job_timeout(job_id)
+    sleep(MAX_TIME_JOB)
+    if haskey(jobs, job_id)
+        notify(jobs[job_id].condition)
+        @warn """Job "$(jobs[job_id].parameters["command"])" did not return a value."""
     end
-    if length(jobs) == 0
-        return nothing
-    end
-    @warn """Some jobs are still running."""
-    return nothing
+    return
 end
 
 
@@ -501,9 +517,7 @@ function save_image(filename::AbstractString; chemviewer_id::String="")
         img_base64 = @js window_obs getPngString($chemviewer_id)
         write_image(filename, img_base64)
     elseif typeof(window_obs) == BiObservable
-        job_id = string(UUIDs.uuid4())
-        global jobs[job_id] = Job(false, Dict("command" => "getPngString", "filename" => filename))
-        window_obs.julia[] = [chemviewer_id, "getPngString", Dict("jobID" => job_id)]
+        queue_job(chemviewer_id, window_obs.julia, Dict("command" => "getPngString", "filename" => filename))
         # image will be saved in the `handle_job` function
     else
         @error """Cannot find existing render output. Call "render_molecule" first."""
@@ -529,9 +543,7 @@ function save_image_labels(filename::AbstractString; chemviewer_id::String="")
         img_base64 = @js window_obs getPngStringLabels($chemviewer_id)
         write_image(filename, img_base64)
     elseif typeof(window_obs) == BiObservable
-        job_id = string(UUIDs.uuid4())
-        global jobs[job_id] = Job(false, Dict("command" => "getPngStringLabels", "filename" => filename))
-        window_obs.julia[] = [chemviewer_id, "getPngStringLabels", Dict("jobID" => job_id)]
+        queue_job(chemviewer_id, window_obs.julia, Dict("command" => "getPngStringLabels", "filename" => filename))
         # image will be saved in the `handle_job` function
     else
         @error """Cannot find existing render output. Call "render_molecule" first."""
@@ -567,7 +579,7 @@ function save_overlay(filename::AbstractString, filename_input1::AbstractString,
         res[i] = RGBA(co.r, co.g, co.b, alphao)
     end
     save(filename, res)
-    return nothing
+    return
 end
 
 
