@@ -533,7 +533,7 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
     }
 
     // If we're dealing with a crystal structure, draw the unit cell
-    if (self.showUnitCell && molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
+    if (molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {
         // Some basic conversions to handle math via THREE.Vector3
         v = new Vector3(0, 0, 0);
         vectors = self.unitcell;
@@ -559,7 +559,9 @@ ChemViewer.prototype.draw = function (molecule, resetCamera=true) {
         material = new LineBasicMaterial({ color: 0x000000, linewidth: 3 });
 
         self.corners = new Line(geometry, material);
-        self.scene.add(self.corners);
+        if (self.showUnitCell) {
+            self.scene.add(self.corners);
+        }
     }
 
     if (molecule.hasOwnProperty('unitcell') && molecule.unitcell.length == 3) {

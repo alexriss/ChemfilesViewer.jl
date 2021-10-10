@@ -103,12 +103,21 @@
             display: none;
         }
 
+        .noselect {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
     </style>
 </head>
 
 <body>
 
-    <div class="chemviewer_main" id="chemviewer_main_{{ id }}">
+    <div class="chemviewer_main noselect" id="chemviewer_main_{{ id }}">
         <div class="chemviewer_row chemviewer_header">
             <div class="chemviewer_header">
                 <select class="chemviewer_buttons" id="chemviewer_drawingtype_{{ id }}">
