@@ -1,3 +1,7 @@
+<p>
+    <img width="100" height="100" src="docs/src/assets/logo.svg?raw=true" />
+</p>
+
 # ChemfilesViewer
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://alexriss.github.io/ChemfilesViewer.jl/stable)
