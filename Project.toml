@@ -18,6 +18,7 @@ Blink = "^0.12"
 Chemfiles = "^0.10"
 Images = "^0.25"
 JSON = "^0.21"
+Rotations = "^1.1"
 WebIO = "^0.8"
 julia = "^1.6"
 
