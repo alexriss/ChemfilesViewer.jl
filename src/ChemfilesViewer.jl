@@ -32,6 +32,8 @@ end
 MAX_TIME_JOB = 5  # maximum execution time of a job
 DEBUG = false
 
+const file_logo = "../frontend/assets/logo.png"
+
 current_chemviewer_id = ""  # holds the last used chemviewer_id
 chemviewer_id_reference = Dict{String, Union{Blink.Window, BiObservable}}()  # holds the windows or observables (see WebIO) associated with the respective chemviewer_ids
 jobs = Dict{String, Job}()  # keeps track of javascript jobs
@@ -201,7 +203,14 @@ function render_dict_molecule_external(dict_molecule::AbstractDict{String,<:Any}
 
     if chemviewer_id == ""
         chemviewer_setup_needed = true
-        window = Window(async=false)
+        abspath_logo = abspath(joinpath(@__DIR__, file_logo))
+        window = Window(async=false, Dict(
+            "webPreferences" => Dict("webSecurity" => false),  # to load local files
+            "title" => "Chemfiles Viewer",
+            "icon" => abspath_logo,
+        ))
+        Blink.@js window require("electron").remote.getCurrentWindow().setMenuBarVisibility(false)
+        Blink.@js window require("electron").remote.getCurrentWindow().setIcon($abspath_logo)
 
         if DEBUG
             opentools(window)
