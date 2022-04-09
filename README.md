@@ -8,6 +8,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://alexriss.github.io/ChemfilesViewer.jl/dev)
 [![Build Status](https://github.com/alexriss/ChemfilesViewer.jl/workflows/CI/badge.svg)](https://github.com/alexriss/ChemfilesViewer.jl/actions)
 [![Coverage](https://codecov.io/gh/alexriss/ChemfilesViewer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/alexriss/ChemfilesViewer.jl)
+<a href="https://twitter.com/00alexx"><img src="https://img.shields.io/twitter/follow/00alexx?style=social" alt="Twitter"></a>
 
 A julia library to visualize chemical molecules and other structures in the [Chemfiles](https://github.com/chemfiles/Chemfiles.jl) format.
 
@@ -94,3 +95,9 @@ Analogously, `a`, `b`, `c` set the view along the unit cell vectors. Uppercase l
 ## Notes
 
 The javascript rendering is based on [Patrick Fuller's imolecule](https://github.com/patrickfuller/imolecule).
+
+## Get in touch
+
+Please post issues, suggestions, and pull requests on github. <a href="https://twitter.com/00alexx">Follow me on twitter</a> for updates and more information about this project: 
+<a href="https://twitter.com/00alexx"><img src="https://img.shields.io/twitter/follow/00alexx?style=social" alt="Twitter"></a>
+
