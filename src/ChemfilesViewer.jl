@@ -135,7 +135,7 @@ function generate_dict_molecule(molecule::Chemfiles.Frame; atom_labels=false)
     c = matrix(UnitCell(molecule))
     if any(c .!= 0)
         for i in 1:3
-            push!(dict_molecule["unit_cell"], c[:,i])
+            push!(dict_molecule["unitcell"], c[:,i])
         end
     end
 
@@ -205,12 +205,14 @@ function render_dict_molecule_external(dict_molecule::AbstractDict{String,<:Any}
         chemviewer_setup_needed = true
         abspath_logo = abspath(joinpath(@__DIR__, file_logo))
         window = Window(async=false, Dict(
-            "webPreferences" => Dict("webSecurity" => false),  # to load local files
+            "webPreferences" => Dict(
+                "webSecurity" => false,   # to load local files
+            ),
             "title" => "Chemfiles Viewer",
             "icon" => abspath_logo,
         ))
-        Blink.@js window require("electron").remote.getCurrentWindow().setMenuBarVisibility(false)
-        Blink.@js window require("electron").remote.getCurrentWindow().setIcon($abspath_logo)
+        Blink.AtomShell.@dot window setMenuBarVisibility(false)
+        Blink.AtomShell.@dot window setIcon($abspath_logo)
 
         if DEBUG
             opentools(window)
