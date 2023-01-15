@@ -1,7 +1,7 @@
 name = "ChemfilesViewer"
 uuid = "e6216453-ab07-4bd6-b3b4-b7ee81a805aa"
 authors = ["Alex Riss <00alexx@riss.at>"]
-version = "0.6.0"
+version = "0.6.1"
 
 [deps]
 Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
