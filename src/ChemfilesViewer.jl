@@ -8,7 +8,8 @@ using Images
 using UUIDs
 using WebIO
 
-export generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
+export load_molecule,
+    generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
     render_molecule, render_molecule!, set_camera_position!, set_options!,
     clear_labels!, add_label!,
     save_image, save_image_labels, save_overlay,
@@ -81,6 +82,18 @@ in the functions [`render_molecule`](@ref), [`render_dict_molecule`](@ref), [`se
 """
 function get_current_chemviewer_id()
     return current_chemviewer_id
+end
+
+
+"""
+    load_molecule(fname::String)
+
+Loads molecular coordinates from a file.
+"""
+function load_molecule(fname::String)
+    trajectory = Trajectory(fname)
+    mol = read(trajectory)
+    return mol
 end
 
 

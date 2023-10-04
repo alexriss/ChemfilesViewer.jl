@@ -23,10 +23,8 @@ The structures can be rendered in [Jupyter](https://jupyter.org/) or in an exter
 ```julia
 using ChemfilesViewer
 
-# read molecule using Chemfiles
-using Chemfiles
-trajectory = Trajectory("mol.sdf")
-mol = read(trajectory)
+# read molecule
+mol = load_moelcule("mol.sdf")
 
 # render molecule
 render_molecule(mol)

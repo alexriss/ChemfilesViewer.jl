@@ -15,10 +15,8 @@ A julia library to visualize chemical molecules and other structures in the [Che
 ```julia
 using ChemfilesViewer
 
-# read molecule using Chemfiles
-using Chemfiles
-trajectory = Trajectory("mol.sdf")
-mol = read(trajectory)
+# read molecule
+mol = load_molecule("mol.sdf")
 
 # render molecule
 render_molecule(mol)
