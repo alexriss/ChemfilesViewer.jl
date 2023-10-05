@@ -1,5 +1,4 @@
 using ChemfilesViewer
-using Chemfiles
 using Images
 using Test
 
@@ -24,8 +23,7 @@ function image_diff(fname1, fname2)
 end
 
 @testset "ChemfilesViewer" begin
-    trajectory = Trajectory("mol.sdf")
-    mol = read(trajectory)
+    mol = load_molecule("mol.sdf")
     
     # render molecule
     render_molecule(mol, options=Dict("renderWidth" => 640, "renderHeight" => 640))
