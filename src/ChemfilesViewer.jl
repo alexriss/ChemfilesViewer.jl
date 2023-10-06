@@ -12,7 +12,7 @@ export load_molecule,
     generate_dict_molecule, render_dict_molecule, render_dict_molecule!,
     render_molecule, render_molecule!, set_camera_position!, set_options!,
     clear_labels!, add_label!,
-    save_image, save_image_labels, save_overlay,
+    save_image, save_image_labels, save_overlay, fadeout_img,
     get_current_chemviewer_id
 
 
@@ -618,5 +618,50 @@ function write_image(filename::AbstractString, img_base64::String)
     return
 end
 
+
+"""
+    fadeout_img(img::Matrix{<:RGBA}, ratio::Float=0.08)
+
+Creates a fadeout image from `img` by making a gradient of relative width `ratio`.
+`img` is given as a Matrix of `RGBA values.
+"""
+function fadeout_img(img::Matrix{<:RGBA}, ratio::Real=0.08)
+    @assert eltype(img) <: RGBA
+    n, m = size(img)
+    res = copy(img)
+    n_lim = (n * ratio, n * (1 - ratio))
+    m_lim = (m * ratio, m * (1 - ratio))
+    for c in CartesianIndices(img)
+        c[1] > n_lim[1] && c[1] < n_lim[2] && c[2] > m_lim[1] && c[2] < m_lim[2] && continue
+        
+        fac = 1.0
+        if c[1] < n_lim[1]
+            fac *= 1 - (c[1] - n_lim[1]) / (1 - n_lim[1])
+        elseif c[1] > n_lim[2]
+            fac *= 1 - (c[1] - n_lim[2]) / (n - n_lim[2])
+        end
+        if c[2] < m_lim[1]
+            fac *= 1 - (c[2] - m_lim[1]) / (1 - m_lim[1])
+        elseif c[2] > m_lim[2]
+            fac *= 1 - (c[2] - m_lim[2]) / (m - m_lim[2])
+        end
+        
+        fac = min(fac, 1.0)
+        fac = max(fac, 0.0)
+        p = img[c]
+        res[c] = RGBA(p.r, p.g, p.b, p.alpha * fac)
+    end
+    return res
+end
+
+"""
+    fadeout_img(img::Matrix{<:RGBA}, ratio::Float=0.08)
+
+Creates a fadeout image from and image specified by its filename `fname` by making a gradient of relative width `ratio`.
+"""
+function fadeout_img(fname::String, ratio::Real=0.08)
+    img = load(fname)
+    fadeout_img(img, ratio)
+end
 
 end
