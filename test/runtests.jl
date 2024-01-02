@@ -121,4 +121,42 @@ end
     close(ChemfilesViewer.get_reference(viewer_id)[1])
     
     @test filesize("test.png") > 10000
+
+    img = rand(RGBA, 10, 10)
+    faded_img = fadeout_img(img, 0.08)
+    @test size(faded_img) == size(img)
+    for c in (:r, :g, :b)
+        @test getfield.(faded_img, c) == getfield.(img, c)
+    end
+    @test all(getfield.(faded_img, :alpha) .<= getfield.(img, :alpha))
+
+    img = load("test.png")
+    faded_img = fadeout_img("test.png", 0.15)
+    for c in (:r, :g, :b)
+        @test getfield.(faded_img, c) == getfield.(img, c)
+    end
+    @test all(getfield.(faded_img, :alpha) .<= getfield.(img, :alpha))
+
+    img = fill(RGBA(0.2, 0.4, 0.5), 100, 100)
+    faded_img = fadeout_img(img, 0.15)
+    @test size(faded_img) == size(img)
+    for c in (:r, :g, :b)
+        @test getfield.(faded_img, c) == getfield.(img, c)
+    end
+    @test all(getfield.(faded_img, :alpha) .<= getfield.(img, :alpha))
+
+    @test all(getfield.(faded_img[1,:], :alpha) .== 0.0)
+    @test all(getfield.(faded_img[:,1], :alpha) .== 0.0)
+    @test all(getfield.(faded_img[end,:], :alpha) .== 0.0)
+    @test all(getfield.(faded_img[:,end], :alpha) .== 0.0)
+    
+    @test all(getfield.(faded_img[2,:], :alpha) .< 0.1)
+    @test all(getfield.(faded_img[:,2], :alpha) .< 0.1)
+    @test all(getfield.(faded_img[end-1,:], :alpha) .< 0.1)
+    @test all(getfield.(faded_img[:,end-1], :alpha) .< 0.1)
+
+    @test all(getfield.(faded_img[15:85,15:85], :alpha) .== 1.0)
+    @test all(getfield.(faded_img[1:14,:], :alpha) .< 1.0)
+    @test all(getfield.(faded_img[86:end,:], :alpha) .< 1.0)
+    @test all(getfield.(faded_img[:,86:end], :alpha) .< 1.0)
 end
