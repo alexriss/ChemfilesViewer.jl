@@ -655,7 +655,7 @@ function fadeout_img(img::Matrix{<:RGBA}, ratio::Real=0.08)
 end
 
 """
-    fadeout_img(img::Matrix{<:RGBA}, ratio::Float=0.08)
+    fadeout_img(fname::String, ratio::Real=0.08)
 
 Creates a fadeout image from and image specified by its filename `fname` by making a gradient of relative width `ratio`.
 """
