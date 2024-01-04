@@ -950,11 +950,13 @@ ChemViewer.prototype.render = function () {
 
 // Either shows or hides the unit cell
 ChemViewer.prototype.toggleUnitCell = function (toggle) {
+    this.showUnitCell = toggle;
     if (this.corners != undefined) {
         this.scene[toggle ? 'add' : 'remove'](this.corners);
         this.render();
     }
-    this.getElementById("chemviewer_unitcell").checked = toggle;
+    const el = this.getElementById("chemviewer_unitcell");
+    el.checked = toggle;
 }
 
 // shows or hides the labels
@@ -966,7 +968,8 @@ ChemViewer.prototype.toggleLabels = function (toggle) {
     } else {
         labels.forEach(e => e.classList.add("hidden"));
     }
-    this.getElementById("chemviewer_labels").checked = toggle;
+    const el = this.getElementById("chemviewer_labels");
+    el.checked = toggle;
     this.render();
 }
 
