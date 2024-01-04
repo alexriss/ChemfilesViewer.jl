@@ -85,6 +85,9 @@ save_image("test.png")
 save_image_labels("test_labels.png")
 # save the overlay of the render and the labels
 save_overlay("test.png", "test_labels.png", "test_both.png")
+
+# create a nice fadeout effect
+save("test_fadeout.png", fadeout_img("test_both.png"))
 ```
 
 Use mouse to rotate, zoom and pan. Keyboard shortcuts `x`, `y`, `z` set the view along the x, y and z axis.
