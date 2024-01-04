@@ -118,7 +118,7 @@ end
     end
     save_image("test.png")
 
-    close(ChemfilesViewer.get_reference(viewer_id)[1])
+    close(ChemfilesViewer.get_reference(viewer_id)[1], quit=true)
     
     @test filesize("test.png") > 10000
 
