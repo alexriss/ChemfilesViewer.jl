@@ -16,11 +16,11 @@ WebIO = "0f1e0344-ec1d-5b48-a673-e5cf874b6c29"
 [compat]
 Blink = "^0.12.9"
 Chemfiles = "^0.10"
-Images = "^0.25"
+Images = "^0.26"
 JSON = "^0.21"
-Rotations = "^1.1"
+Rotations = "^1.7"
 WebIO = "^0.8"
-julia = "^1.8"
+julia = "^1.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
